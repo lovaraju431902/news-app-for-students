@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Blog {
+  id          String  @id @default(cuid())
+  title       String
+  slug        String  @unique
+  content     String
+  excerpt     String?
+  featuredImg String?
+
+  tags BlogTag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt(sort: Desc)])
+}
+
+model Tag {
+  id   String @id @default(cuid())
+  name String
+  slug String @unique
+
+  // null = parent tag
+  parentId String?
+  parent   Tag?    @relation("TagHierarchy", fields: [parentId], references: [id])
+  children Tag[]   @relation("TagHierarchy")
+
+  blogs BlogTag[]
+
+  createdAt DateTime @default(now())
+
+  @@index([slug])
+  @@index([parentId])
+}
+
+model BlogTag {
+  blogId String
+  tagId  String
+
+  blog Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([blogId, tagId])
+  @@index([tagId])
+  @@index([blogId])
+}
