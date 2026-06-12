@@ -1,182 +1,255 @@
-import React from "react";
+"use client";
+import React, { useEffect } from "react";
 import { Play } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 
-interface VideoItem {
-  id: number;
+type Videogallerytype = {
+  id: string;
+  title: string;
   image: string;
   duration: string;
   category: string;
-  title: string;
-}
-
-const largeVideo: VideoItem = {
-  id: 1,
-  image: "https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=600&auto=format&fit=crop",
-  duration: "03:02",
-  category: "Telugu Video",
-  title: "CM Vijay plays chess with chess Grandmaster Praggnanandhaa, viral video wins hearts on social media",
+  href: string;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
-const stackedVideos: VideoItem[] = [
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?q=80&w=300&auto=format&fit=crop",
-    duration: "03:03",
-    category: "Cinema",
-    title: "NTR sends cookies to children; their cute reaction video goes viral!",
-  },
-  {
-    id: 3,
-    image: "https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?q=80&w=300&auto=format&fit=crop",
-    duration: "05:36",
-    category: "National",
-    title: "Tirupati Zoo sets up special arrangements for animals, elephants get cool showers",
-  }
-];
-
-const gridVideos: VideoItem[] = [
-  {
-    id: 4,
-    image: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?q=80&w=300&auto=format&fit=crop",
-    duration: "09:02",
-    category: "Telugu Video",
-    title: "Chandrababu Naidu rides bicycle for 5 km in Visakhapatnam to promote fitness",
-  },
-  {
-    id: 5,
-    image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=300&auto=format&fit=crop",
-    duration: "10:43",
-    category: "Cinema",
-    title: "'Peddi' Review: Ram Charan's struggle for recognition, movie performance analysis",
-  },
-  {
-    id: 6,
-    image: "https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=300&auto=format&fit=crop",
-    duration: "06:07",
-    category: "Telugu Video",
-    title: "Janhvi Kapoor visits Tirumala Srivari temple following 'Peddi' success",
-  },
-  {
-    id: 7,
-    image: "https://images.unsplash.com/photo-15518156677180-95a2893f3e9f?q=80&w=300&auto=format&fit=crop",
-    duration: "04:21",
-    category: "Telugu Video",
-    title: "YSRCP protests in Tirupati cause traffic delays for Tirumala devotees",
-  }
-];
+type VideogalleryResponse = {
+  data: Videogallerytype[];
+};
 
 export default function VideoGallery() {
-  return (
-    <section className="p-3 w-full pr-[70px] pl-[195px]">
-      {/* Main Container with light gray background matching image */}
-      <div className="bg-gray-50/80 border border-gray-100/90 rounded-2xl p-4 md:p-6 shadow-sm">
-        
-        {/* Title */}
-        <h2 className="text-xl font-extrabold text-gray-900 mb-6 tracking-tight">
-          Video Gallery
-        </h2>
+  const getVideogallery = async (): Promise<VideogalleryResponse> => {
+    const response = await fetch("/api/videogallery");
 
-        {/* Row 1 (Large Video + Stacked Videos) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          
-          {/* Left: Large Video Card (Spans 2 columns on desktop) */}
-          <div className="lg:col-span-2 group flex flex-col sm:flex-row gap-4 items-start cursor-pointer bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
-            {/* Thumbnail */}
-            <div className="relative w-full sm:w-[60%] aspect-video rounded-lg overflow-hidden shrink-0 bg-black">
-              <img
-                src={largeVideo.image}
-                alt={largeVideo.title}
-                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                loading="lazy"
-              />
-              {/* Duration Pill (bottom left) */}
-              <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 bg-black/85 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm">
-                <Play className="w-2.5 h-2.5 fill-current" />
-                <span>{largeVideo.duration}</span>
-              </div>
-            </div>
+    if (!response.ok) {
+      throw new Error("Failed to fetch videogallery");
+    }
 
-            {/* Content info */}
-            <div className="flex flex-col p-1">
-              <span className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
-                {largeVideo.category}
-              </span>
-              <h3 className="text-gray-900 font-extrabold text-sm sm:text-base leading-snug group-hover:text-red-700 transition-colors line-clamp-4">
-                {largeVideo.title}
-              </h3>
-            </div>
-          </div>
+    return response.json();
+  };
 
-          {/* Right: Two Stacked Video Cards */}
-          <div className="flex flex-col gap-4">
-            {stackedVideos.map((video) => (
-              <div
-                key={video.id}
-                className="group flex gap-3 items-center cursor-pointer bg-white p-2 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 min-w-0"
-              >
-                {/* Thumbnail */}
-                <div className="relative w-28 sm:w-32 aspect-video rounded-lg overflow-hidden shrink-0 bg-black">
-                  <img
-                    src={video.image}
-                    alt={video.title}
-                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  {/* Duration Pill */}
-                  <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-black/85 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm">
-                    <Play className="w-2 h-2 fill-current" />
-                    <span>{video.duration}</span>
+  const {
+    data: Videogallerydata,
+    isLoading: VideogalleryisLoading,
+    error: VideogalleryError,
+  } = useQuery({
+    queryKey: ["videogallery"],
+    queryFn: getVideogallery,
+  });
+
+  useEffect(() => {
+    if (Videogallerydata) {
+      console.log("video gallery data", Videogallerydata.data);
+    }
+  }, [Videogallerydata?.data]);
+
+  const videos = Videogallerydata?.data || [];
+
+  if (VideogalleryisLoading) {
+    return (
+      <section className="w-full px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 md:p-6 shadow-sm animate-pulse">
+            {/* Heading Skeleton */}
+            <div className="h-7 bg-gray-250 rounded-md w-40 mb-6"></div>
+
+            {/* Top Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
+              {/* Featured Video Skeleton */}
+              <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex flex-col md:flex-row gap-4">
+                <div className="relative w-full md:w-[55%] aspect-video bg-gray-250 rounded-lg overflow-hidden shrink-0"></div>
+                <div className="flex-1 space-y-3 py-1">
+                  <div className="h-4 bg-gray-250 rounded w-1/4"></div>
+                  <div className="space-y-2">
+                    <div className="h-5 bg-gray-250 rounded w-full"></div>
+                    <div className="h-5 bg-gray-250 rounded w-5/6"></div>
+                    <div className="h-5 bg-gray-250 rounded w-2/3"></div>
                   </div>
                 </div>
-
-                {/* Content */}
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-0.5">
-                    {video.category}
-                  </span>
-                  <h4 className="text-gray-900 font-bold text-xs leading-snug line-clamp-3 group-hover:text-red-700 transition-colors">
-                    {video.title}
-                  </h4>
-                </div>
               </div>
-            ))}
+
+              {/* Side Videos Skeleton */}
+              <div className="flex flex-col gap-4">
+                {[1, 2].map((i) => (
+                  <div key={i} className="flex gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                    <div className="relative w-28 sm:w-36 aspect-video bg-gray-250 rounded-lg shrink-0 overflow-hidden"></div>
+                    <div className="flex-1 space-y-2 py-1">
+                      <div className="h-3 bg-gray-250 rounded w-1/3"></div>
+                      <div className="h-4 bg-gray-250 rounded w-full"></div>
+                      <div className="h-4 bg-gray-250 rounded w-2/3"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Grid Skeleton */}
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden p-3 space-y-3">
+                  <div className="aspect-video bg-gray-250 rounded-lg overflow-hidden"></div>
+                  <div className="space-y-2">
+                    <div className="h-3 bg-gray-250 rounded w-1/3"></div>
+                    <div className="h-4 bg-gray-250 rounded w-full"></div>
+                    <div className="h-4 bg-gray-250 rounded w-5/6"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (videos.length === 0) {
+    return null;
+  }
+
+  const featuredVideo = videos[0];
+  const stackedVideos = videos.slice(1, 3);
+  const gridVideos = videos.slice(3);
+
+  return (
+    <section className="w-full lg:pl-[180px] py-6">
+      <div className="max-w-full mx-auto">
+        <div className="rounded-2xl p-4 md:p-6 ">
+          {/* Heading */}
+          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 mb-6">
+            Video Gallery
+          </h2>
+
+          {/* Top Section */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
+            {/* Featured Video */}
+            {(() => {
+              const cardContent = (
+                <div className="flex flex-col md:flex-row h-full">
+                  {/* Image */}
+                  <div className="relative w-full md:w-[55%] aspect-video overflow-hidden">
+                    <img
+                      src={featuredVideo.image}
+                      alt={featuredVideo.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+
+                    <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/90 text-white text-[11px] font-semibold px-2 py-1 rounded">
+                      <Play className="w-3 h-3 fill-current" />
+                      <span>{featuredVideo.duration}</span>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 p-4">
+                    <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                      {featuredVideo.category}
+                    </span>
+
+                    <h3 className="mt-2 text-base md:text-lg font-extrabold text-gray-900 leading-snug line-clamp-4 group-hover:text-red-700 transition-colors">
+                      {featuredVideo.title}
+                    </h3>
+                  </div>
+                </div>
+              );
+
+              return featuredVideo.href ? (
+                <Link href={featuredVideo.href} className="lg:col-span-2 group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden block">
+                  {cardContent}
+                </Link>
+              ) : (
+                <div className="lg:col-span-2 group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                  {cardContent}
+                </div>
+              );
+            })()}
+
+            {/* Side Videos */}
+            <div className="flex flex-col gap-4">
+              {stackedVideos.map((video) => {
+                const cardContent = (
+                  <div className="group flex gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 w-full h-full cursor-pointer">
+                    <div className="relative w-28 sm:w-36 aspect-video shrink-0 overflow-hidden rounded-lg">
+                      <img
+                        src={video.image}
+                        alt={video.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+
+                      <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-black/90 text-white text-[10px] px-1.5 py-0.5 rounded">
+                        <Play className="w-2.5 h-2.5 fill-current" />
+                        <span>{video.duration}</span>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wide">
+                        {video.category}
+                      </span>
+
+                      <h4 className="mt-1 text-xs sm:text-sm font-bold text-gray-900 leading-snug line-clamp-3 group-hover:text-red-700 transition-colors">
+                        {video.title}
+                      </h4>
+                    </div>
+                  </div>
+                );
+
+                return video.href ? (
+                  <Link key={video.id} href={video.href} className="block w-full">
+                    {cardContent}
+                  </Link>
+                ) : (
+                  <div key={video.id} className="w-full">{cardContent}</div>
+                );
+              })}
+            </div>
           </div>
 
-        </div>
+          {/* Bottom Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
+            {gridVideos.map((video) => {
+              const cardContent = (
+                <div className="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer h-full">
+                  <div className="relative aspect-video overflow-hidden">
+                    <img
+                      src={video.image}
+                      alt={video.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
 
-        {/* Row 2 (4 Vertical Grid Cards) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-          {gridVideos.map((video) => (
-            <div key={video.id} className="group cursor-pointer flex flex-col bg-white p-2 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
-              
-              {/* Thumbnail */}
-              <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
-                <img
-                  src={video.image}
-                  alt={video.title}
-                  className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
-                  loading="lazy"
-                />
-                {/* Duration Pill */}
-                <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/85 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm">
-                  <Play className="w-2 h-2 fill-current" />
-                  <span>{video.duration}</span>
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/90 text-white text-[10px] px-2 py-1 rounded">
+                      <Play className="w-2.5 h-2.5 fill-current" />
+                      <span>{video.duration}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3">
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wide">
+                      {video.category}
+                    </span>
+
+                    <h4 className="mt-1 text-sm font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-red-700 transition-colors">
+                      {video.title}
+                    </h4>
+                  </div>
                 </div>
-              </div>
+              );
 
-              {/* Info */}
-              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mt-2 mb-0.5">
-                {video.category}
-              </span>
-              <h4 className="text-gray-950 font-bold text-xs sm:text-sm leading-snug line-clamp-2 group-hover:text-red-700 transition-colors">
-                {video.title}
-              </h4>
-
-            </div>
-          ))}
+              return video.href ? (
+                <Link key={video.id} href={video.href} className="block h-full">
+                  {cardContent}
+                </Link>
+              ) : (
+                <div key={video.id} className="h-full">{cardContent}</div>
+              );
+            })}
+          </div>
         </div>
-
       </div>
     </section>
   );
 }
+
+

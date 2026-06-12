@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Blog {
@@ -50,4 +51,138 @@ model BlogTag {
   @@id([blogId, tagId])
   @@index([tagId])
   @@index([blogId])
+}
+
+model SlideData {
+  id        String   @id @default(cuid())
+  title     String
+  image     String
+  readTime  String
+  date      String
+  author    String
+  badge     Json
+  href      String
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RightCards {
+  id        String   @id @default(cuid())
+  image     String?
+  title     String?
+  date      String
+  badge     Json?
+  isActive  Boolean  @default(false)
+  href      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LatestNews {
+  id        String   @id @default(cuid())
+  tag       String
+  tagColor  String
+  image     String?
+  title     String?
+  date      String
+  read      String
+  isActive  Boolean  @default(false)
+  href      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TrendingNews {
+  id        String   @id @default(cuid())
+  image     String?
+  title     String?
+  date      String
+  isActive  Boolean  @default(false)
+  href      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PopularTopics {
+  id         String   @id @default(cuid())
+  topic      String
+  labelColor String
+  href       String?
+  isActive   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model StudyMaterial {
+  id        String   @id @default(cuid())
+  href      String?
+  title     String
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TechnologyNews {
+  id        String   @id @default(cuid())
+  title     String
+  image     String
+  isActive  Boolean  @default(false)
+  href      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WebStory {
+  id        String   @id @default(cuid())
+  title     String
+  image     String?
+  isActive  Boolean  @default(false)
+  href      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Video {
+  id        String   @id @default(cuid())
+  title     String
+  image     String
+  badge     String
+  isActive  Boolean  @default(false)
+  href      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MostRead {
+  id        String   @id @default(cuid())
+  title     String
+  image     String
+  isActive  Boolean  @default(false)
+  href      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VideoGallery {
+  id        String   @id @default(cuid())
+  title     String
+  image     String
+  duration  String
+  category  String
+  isActive  Boolean  @default(false)
+  href      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model YouMayLike {
+  id          String   @id @default(cuid())
+  headline    String
+  description String
+  image       String
+  isActive    Boolean  @default(false)
+  href        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
