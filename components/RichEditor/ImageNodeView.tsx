@@ -2,6 +2,7 @@
 
 import React from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
+import Image from "next/image";
 import {
   AlignLeft,
   AlignCenter,
@@ -60,11 +61,13 @@ export default function ImageNodeView({
       }`}
     >
       <div className="relative overflow-hidden rounded-lg border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-900/40">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={src}
           alt={alt || "Image link"}
+          width={800}
+          height={500}
           className="w-full h-auto object-contain block select-none pointer-events-none"
+          sizes="100vw"
         />
 
         {/* Control Toolbar - visible on hover or selection */}

@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Play } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
 
 // interface Story {
 //   id: number;
@@ -269,15 +270,12 @@ export default function WebStoriesAndVideos() {
             <div key={story.id} className={`group flex flex-col cursor-pointer${index >= 4 ? " sm:hidden" : ""}`}>
               {/* Card Thumbnail */}
               <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-gray-50 group-hover:shadow-md transition-shadow duration-300">
-                {/* Single Image Card */}
-
-
-                <img
-
+                <Image
                   src={story.image}
                   alt={story.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  sizes="(max-width: 768px) 33vw, 200px"
                 />
 
 
@@ -308,11 +306,12 @@ export default function WebStoriesAndVideos() {
             <div key={video.id} className="group cursor-pointer flex flex-col">
               {/* Video Thumbnail Container */}
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-gray-100 shadow-sm group-hover:shadow-md transition-all duration-300">
-                <img
+                <Image
                   src={video.image}
                   alt={video.title}
-                  className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-103 transition-all duration-500"
-                  loading="lazy"
+                  fill
+                  className="object-cover opacity-90 group-hover:opacity-100 group-hover:scale-103 transition-all duration-500"
+                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 300px"
                 />
 
                 {/* Center Play Button Overlay */}

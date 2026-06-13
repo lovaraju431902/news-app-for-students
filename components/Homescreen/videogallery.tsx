@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { Play } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import Image from "next/image";
 
 type Videogallerytype = {
   id: string;
@@ -128,12 +129,13 @@ export default function VideoGallery() {
             {(() => {
               const cardContent = (
                 <div className="flex flex-col md:flex-row h-full">
-                  {/* Image */}
                   <div className="relative w-full md:w-[55%] aspect-video overflow-hidden">
-                    <img
+                    <Image
                       src={featuredVideo.image}
                       alt={featuredVideo.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 768px) 100vw, 400px"
                     />
 
                     <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-black/90 text-white text-[11px] font-semibold px-2 py-1 rounded">
@@ -172,10 +174,12 @@ export default function VideoGallery() {
                 const cardContent = (
                   <div className="group flex gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 w-full h-full cursor-pointer">
                     <div className="relative w-28 sm:w-36 aspect-video shrink-0 overflow-hidden rounded-lg">
-                      <img
+                      <Image
                         src={video.image}
                         alt={video.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        sizes="150px"
                       />
 
                       <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-black/90 text-white text-[10px] px-1.5 py-0.5 rounded">
@@ -213,10 +217,12 @@ export default function VideoGallery() {
               const cardContent = (
                 <div className="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer h-full">
                   <div className="relative aspect-video overflow-hidden">
-                    <img
+                    <Image
                       src={video.image}
                       alt={video.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 250px"
                     />
 
                     <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/90 text-white text-[10px] px-2 py-1 rounded">

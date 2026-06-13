@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect } from "react";
+import Image from "next/image";
 
 // interface AdItem {
 //   id: number;
@@ -177,11 +178,12 @@ export default function YouMayLike() {
           <div key={ad.id} className="group flex flex-col h-full bg-white rounded-lg">
             {/* Thumbnail */}
             <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg shadow-sm border border-gray-100 mb-3 bg-gray-50">
-              <img
+              <Image
                 src={ad.image}
                 alt={ad.headline}
-                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                loading="lazy"
+                fill
+                className="object-cover group-hover:scale-102 transition-transform duration-500"
+                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 20vw, 200px"
               />
             </div>
 

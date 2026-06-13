@@ -23,7 +23,7 @@ export async function createTagAction(name: string, parentId?: string | null) {
   if (!trimmedName) {
     return { success: false, error: "Tag name cannot be empty." };
   }
-  
+
   const slug = trimmedName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -112,14 +112,14 @@ export async function searchBlogsAction(tagIds: string[]) {
     const whereClause =
       tagIds.length > 0
         ? {
-            tags: {
-              some: {
-                tagId: {
-                  in: tagIds,
-                },
+          tags: {
+            some: {
+              tagId: {
+                in: tagIds,
               },
             },
-          }
+          },
+        }
         : {};
 
     const blogs = await prisma.blog.findMany({

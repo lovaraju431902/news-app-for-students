@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   Search, 
   Tag as TagIcon, 
@@ -41,6 +42,20 @@ interface Blog {
     tag: Tag;
   }[];
 }
+
+const BlogImage = ({ src, alt }: { src: string | null; alt: string }) => {
+  const [imgSrc, setImgSrc] = useState(src || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80");
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      fill
+      className="object-cover group-hover:scale-103 transition-transform duration-500"
+      onError={() => setImgSrc("https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80")}
+      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 400px"
+    />
+  );
+};
 
 export default function BlogSearchPage() {
   // Tag filter state
@@ -418,14 +433,7 @@ export default function BlogSearchPage() {
                   >
                     {/* Image wrapper */}
                     <div className="relative aspect-video w-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                      <img 
-                        src={blog.featuredImg || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80"} 
-                        alt={blog.title}
-                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
-                        onError={(e) => {
-                          (e.target as any).src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80";
-                        }}
-                      />
+                      <BlogImage src={blog.featuredImg} alt={blog.title} />
                       
                       {/* Floating main tag */}
                       {blog.tags.length > 0 && (

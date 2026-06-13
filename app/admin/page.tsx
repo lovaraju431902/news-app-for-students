@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   LayoutDashboard,
   Plus,
@@ -39,6 +40,20 @@ interface Blog {
     tag: Tag;
   }[];
 }
+
+const AdminBlogImage = ({ src, alt }: { src: string | null; alt: string }) => {
+  const [imgSrc, setImgSrc] = useState(src || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=120&q=80");
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      width={56}
+      height={40}
+      className="object-cover w-full h-full"
+      onError={() => setImgSrc("https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=120&q=80")}
+    />
+  );
+};
 
 export default function AdminDashboardPage() {
   const queryClient = useQueryClient();
@@ -100,7 +115,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-200">
-      
+
       {/* Top Header Navigation */}
       <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-45 px-4 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -142,7 +157,7 @@ export default function AdminDashboardPage() {
 
       {/* Content Area */}
       <main className="flex-1 max-w-[1440px] w-full mx-auto p-4 lg:p-8 flex flex-col gap-6">
-        
+
         {/* STATS OVERVIEW CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Card 1 */}
@@ -232,19 +247,12 @@ export default function AdminDashboardPage() {
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
                   {blogs.map((blog) => (
                     <tr key={blog.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-colors">
-                      
+
                       {/* Image & Title */}
                       <td className="px-6 py-4 min-w-[280px]">
                         <div className="flex items-center gap-3">
                           <div className="w-14 h-10 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-850 shrink-0 border border-zinc-200 dark:border-zinc-800">
-                            <img
-                              src={blog.featuredImg || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=120&q=80"}
-                              alt={blog.title}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as any).src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=120&q=80";
-                              }}
-                            />
+                            <AdminBlogImage src={blog.featuredImg} alt={blog.title} />
                           </div>
                           <div>
                             <div className="font-bold text-zinc-900 dark:text-white line-clamp-1 text-sm">
@@ -266,11 +274,10 @@ export default function AdminDashboardPage() {
                             blog.tags.map(({ tag }) => (
                               <span
                                 key={tag.id}
-                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                                  tag.parentId
+                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${tag.parentId
                                     ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-550 dark:text-zinc-400"
                                     : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                                }`}
+                                  }`}
                               >
                                 {tag.name}
                               </span>
@@ -309,7 +316,7 @@ export default function AdminDashboardPage() {
                               </Link>
                             );
                           })()}
-                          
+
                           <Link
                             href={`/admin/richeditor?edit=${blog.id}`}
                             className="p-2 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-850 rounded-lg text-zinc-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors inline-block"

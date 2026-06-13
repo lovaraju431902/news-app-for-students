@@ -1,7 +1,10 @@
+"use client"
+
 import { govtJobs, studyImg } from "@/utils/images";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, CalendarDays, ChevronRight, FileText, Flame, Mail, Send, TrendingUp } from "lucide-react";
 import { useEffect } from "react";
+import Image from "next/image";
 
 
 
@@ -491,11 +494,13 @@ export default function RightRail() {
                     {trendingData.map((item) => (
                         <div key={item.id} className="flex gap-3 items-center group cursor-pointer">
 
-                            <img
-                                src={item.image}
-                                className="w-12 h-12 rounded-lg object-cover shadow-sm group-hover:scale-102 transition-transform duration-300 shrink-0"
-                                alt={item.title}
-                            />
+                             <Image
+                                 src={item.image}
+                                 width={48}
+                                 height={48}
+                                 className="rounded-lg object-cover shadow-sm group-hover:scale-102 transition-transform duration-300 shrink-0"
+                                 alt={item.title}
+                             />
                             <div className="flex-1 min-w-0">
                                 <h4 className="text-xs font-bold text-gray-950 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">
                                     {item.title}
@@ -567,12 +572,13 @@ export default function RightRail() {
                     {technologynewsdata.map((item) => (
                         <div key={item.id} className="flex gap-3 items-start group cursor-pointer">
                             <div className="relative w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-gray-50 border border-gray-100 shadow-sm">
-                                <img
-                                    src={item.image}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    alt={item.title}
-                                    loading="lazy"
-                                />
+                                 <Image
+                                     src={item.image}
+                                     width={80}
+                                     height={56}
+                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                     alt={item.title}
+                                 />
                             </div>
                             <h4 className="text-xs sm:text-sm font-bold text-gray-950 leading-snug group-hover:text-[#b91c1c] transition-colors line-clamp-2">
                                 {item.title}

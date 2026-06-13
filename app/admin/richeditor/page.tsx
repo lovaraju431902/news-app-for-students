@@ -799,8 +799,8 @@ function RichEditorPageContent() {
                 type="button"
                 onClick={() => setFontFamily("serif")}
                 className={`px-2.5 py-1 rounded-md text-xs font-semibold font-serif transition-colors ${fontFamily === "serif"
-                    ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800"
+                  ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800"
                   }`}
                 title="Serif Font Preview"
               >
@@ -810,8 +810,8 @@ function RichEditorPageContent() {
                 type="button"
                 onClick={() => setFontFamily("sans")}
                 className={`px-2.5 py-1 rounded-md text-xs font-semibold font-sans transition-colors ${fontFamily === "sans"
-                    ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800"
+                  ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800"
                   }`}
                 title="Sans-serif Font Preview"
               >
@@ -825,8 +825,8 @@ function RichEditorPageContent() {
                 type="button"
                 onClick={() => setActiveTab("edit")}
                 className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-colors ${activeTab === "edit"
-                    ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
-                    : "text-zinc-600 dark:text-zinc-400"
+                  ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
+                  : "text-zinc-600 dark:text-zinc-400"
                   }`}
               >
                 Editor Only
@@ -835,8 +835,8 @@ function RichEditorPageContent() {
                 type="button"
                 onClick={() => setActiveTab("both")}
                 className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-colors ${activeTab === "both"
-                    ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
-                    : "text-zinc-600 dark:text-zinc-400"
+                  ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
+                  : "text-zinc-600 dark:text-zinc-400"
                   }`}
               >
                 Split View
@@ -845,8 +845,8 @@ function RichEditorPageContent() {
                 type="button"
                 onClick={() => setActiveTab("preview")}
                 className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-colors ${activeTab === "preview"
-                    ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
-                    : "text-zinc-600 dark:text-zinc-400"
+                  ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
+                  : "text-zinc-600 dark:text-zinc-400"
                   }`}
               >
                 Preview Only
@@ -859,8 +859,8 @@ function RichEditorPageContent() {
                 type="button"
                 onClick={() => setActiveTab("edit")}
                 className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${activeTab === "edit"
-                    ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
-                    : "text-zinc-600 dark:text-zinc-400"
+                  ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
+                  : "text-zinc-600 dark:text-zinc-400"
                   }`}
               >
                 Editor
@@ -869,8 +869,8 @@ function RichEditorPageContent() {
                 type="button"
                 onClick={() => setActiveTab("preview")}
                 className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${activeTab === "preview"
-                    ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
-                    : "text-zinc-600 dark:text-zinc-400"
+                  ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
+                  : "text-zinc-600 dark:text-zinc-400"
                   }`}
               >
                 Preview

@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import Image from "next/image";
 
 // interface MostReadItem {
 //   id: string | number;
@@ -135,11 +136,12 @@ export default function MostRead() {
             <div className="group cursor-pointer flex flex-col h-full">
               {/* Thumbnail Container */}
               <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-55 border border-gray-100 shadow-sm group-hover:shadow-md transition-shadow duration-300">
-                <img
+                <Image
                   src={item.image}
                   alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
-                  loading="lazy"
+                  fill
+                  className="object-cover group-hover:scale-103 transition-transform duration-500"
+                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 200px"
                 />
               </div>
 

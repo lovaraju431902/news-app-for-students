@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
+import Image from "next/image";
 import { getEmbedUrl } from "./CustomVideo";
 import {
   GripVertical,
@@ -108,11 +109,12 @@ export default function VideoNodeView({
               className="relative w-full h-full flex items-center justify-center bg-zinc-900/60 cursor-pointer group/video"
             >
               {thumbnail ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={thumbnail}
                   alt="Video thumbnail"
-                  className="w-full h-full object-cover opacity-70 group-hover/video:scale-105 transition-transform duration-500"
+                  fill
+                  className="object-cover opacity-70 group-hover/video:scale-105 transition-transform duration-500"
+                  sizes="(max-width: 768px) 100vw, 800px"
                 />
               ) : (
                 <div className="w-full h-full bg-zinc-900 flex flex-col items-center justify-center text-zinc-650 gap-2">

@@ -2,6 +2,7 @@ import { govtJobs, studyImg, aiRobot, youtubeImg } from "@/utils/images";
 import { useQuery } from "@tanstack/react-query";
 import { Flame, ChevronRight, CalendarDays, Clock } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect } from "react";
 
 
@@ -105,7 +106,13 @@ export default function LatestNews() {
                             <div>
 
                                 <div className="relative h-36">
-                                    <img src={it.image} alt={it.title} className="w-full h-full object-cover" loading="lazy" width={768} height={512} />
+                                    <Image
+                                        src={it.image}
+                                        alt={it.title}
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 768px) 50vw, 250px"
+                                    />
                                     <span className={`absolute top-2 left-2 ${it.tagColor} text-white text-[10px] font-bold px-2 py-0.5 rounded`}>{it.tag}</span>
                                 </div>
                                 <div className="p-2">

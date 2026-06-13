@@ -6,13 +6,13 @@ export default function Header() {
         <header className="bg-card border-b border-gray-200">
             <div className="max-w-[1440px] mx-auto px-4 py-3 flex flex-col md:flex-row md:justify-around gap-4 md:gap-6">
                 <div className="w-full md:w-auto flex items-center justify-between">
-                    <a className="flex items-center gap-2.5 shrink-0">
+                    <a href="/" className="flex items-center gap-2.5 shrink-0">
                         <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-primary to-accent-purple grid place-items-center text-white">
                             <GraduationCap className="w-6 h-6" />
                         </div>
                         <div className="leading-tight">
                             <div className="text-[22px] font-extrabold tracking-tight">
-                                Students <span className="text-red-600">Voice</span>
+                                Students <span className="text-red-600">Hub</span>
                             </div>
                             <div className="text-[11px] text-muted-foreground font-medium">News • Jobs • Tech • Education</div>
                         </div>

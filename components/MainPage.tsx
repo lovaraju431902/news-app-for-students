@@ -12,7 +12,7 @@ export default function MainPage() {
 
     return (
 
-        <div>
+        <div className="hide-scrollbar">
             <Topbar />
             <Header />
             <Navbar />
