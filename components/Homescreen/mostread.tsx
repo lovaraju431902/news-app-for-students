@@ -111,7 +111,7 @@ export default function MostRead() {
   useEffect(() => {
     if (MostreadResdata) {
 
-      console.log("1 st data", MostreadResdata.data)
+      // console.log("1 st data", MostreadResdata.data)
 
     }
   }, [MostreadResdata?.data]);
@@ -119,9 +119,37 @@ export default function MostRead() {
 
   const staticMostReadData = MostreadResdata?.data || [];
 
+  if (MostreadResloading || MostreadResError) {
+    return (
+      <section className="w-full  md:pr-[70px] lg:pl-[222px]">
+        <div className="ml-6 md:ml-0">
+          {/* Header Skeleton */}
+          <div className="flex items-center gap-1 mb-4 w-fit">
+            <div className="h-6 bg-zinc-200 rounded w-28 animate-pulse"></div>
+          </div>
+
+          {/* Responsive Grid Skeleton */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            {Array.from({ length: 5 }).map((_, idx) => (
+              <div key={idx} className="flex flex-col h-full">
+                {/* Thumbnail Placeholder */}
+                <div className="relative w-full aspect-video rounded-xl bg-zinc-200 animate-pulse mb-2"></div>
+
+                {/* Headline Placeholder */}
+                <div className="space-y-1.5 mt-1">
+                  <div className="h-3.5 bg-zinc-200 rounded w-full animate-pulse"></div>
+                  <div className="h-3.5 bg-zinc-200 rounded w-3/4 animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className=" w-full  md::pr-[70px] lg:pl-[222px]">
+    <section className=" w-full  md:pr-[70px] lg:pl-[222px]">
       {/* Header */}
       <div className="flex items-center gap-1 mb-4 cursor-pointer group w-fit">
         <h2 className="text-xl font-extrabold text-gray-900 group-hover:text-red-700 transition-colors">

@@ -75,7 +75,19 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 
 export default function Navbar() {
-    const items = ["Latest News", "Government Jobs", "Results", "Admit Cards", "Scholarships", "Tech News", "YouTube Tips", "Study Material", "Exam Prep", "More"];
+    const items = [
+        { name: "Latest News", href: "/blogs" },
+        { name: "Government Jobs", href: "/govt-jobs-updates" },
+        { name: "Scholarships", href: "/scholarships" },
+        { name: "Part Time Income", href: "/part-time-income" },
+        { name: "Share Market", href: "/share-market" },
+        { name: "YouTube Tips", href: "/youtube-growth" },
+        { name: "AI Tools", href: "/ai-tools" },
+        { name: "Internships", href: "/internships" },
+        { name: "Current Affairs", href: "/current-affairs" }
+    ];
+
+
     const [open, setOpen] = useState(false);
 
 
@@ -205,9 +217,13 @@ export default function Navbar() {
                 </button>
                 <nav className="flex items-center overflow-x-auto whitespace-nowrap scrollbar-none [&::-webkit-scrollbar]:hidden py-1 px-2">
                     {items.map((it) => (
-                        <a key={it} className="h-12 hover:bg-blue-100 hover:rounded-xl px-4 flex items-center gap-1 text-sm font-bold text-black hover:text-primary cursor-pointer shrink-0">
-                            {it} <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-                        </a>
+                        <Link 
+                            key={it.name} 
+                            href={it.href} 
+                            className="h-12 hover:bg-blue-100 hover:rounded-xl px-4 flex items-center gap-1 text-sm font-bold text-black hover:text-primary cursor-pointer shrink-0"
+                        >
+                            {it.name} <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+                        </Link>
                     ))}
                 </nav>
                 <button className="h-12  w-12  hidden md:block"><Menu className="w-5 h-5" /></button>

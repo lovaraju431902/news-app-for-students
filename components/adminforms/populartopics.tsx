@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const PopularSchema = z.object({
     topic: z.string().min(3, "Topic is required"),
@@ -26,6 +26,7 @@ export const PopularSchema = z.object({
 export type PopularValues = z.infer<typeof PopularSchema>;
 
 export default function PopularTopicsForm() {
+    const queryClient = useQueryClient();
     const [loading, setLoading] = useState(false);
 
     const {
@@ -85,6 +86,7 @@ export default function PopularTopicsForm() {
 
         onSuccess: (data) => {
             console.log(data);
+            queryClient.invalidateQueries();
             alert("Popular news created successfully");
         },
 

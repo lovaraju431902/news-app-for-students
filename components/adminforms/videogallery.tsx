@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const VideoGallerySchema = z.object({
     title: z.string().min(3, "Title is required"),
@@ -28,6 +28,7 @@ export const VideoGallerySchema = z.object({
 export type VideoGalleryFormValues = z.infer<typeof VideoGallerySchema>;
 
 export default function VideoGalleryForm() {
+    const queryClient = useQueryClient();
     const {
         register,
         handleSubmit,
@@ -67,6 +68,7 @@ export default function VideoGalleryForm() {
     const mutation = useMutation({
         mutationFn: createVideoGalleryItem,
         onSuccess: () => {
+            queryClient.invalidateQueries();
             alert("Video Gallery item created successfully");
         },
         onError: (error) => {

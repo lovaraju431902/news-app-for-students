@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const WebStorySchema = z.object({
     title: z.string().min(3, "Title is required"),
@@ -26,6 +26,7 @@ export const WebStorySchema = z.object({
 export type WebStoryFormValues = z.infer<typeof WebStorySchema>;
 
 export default function WebStoryForm() {
+    const queryClient = useQueryClient();
     const {
         register,
         handleSubmit,
@@ -66,6 +67,7 @@ export default function WebStoryForm() {
     const mutation = useMutation({
         mutationFn: createWebStory,
         onSuccess: () => {
+            queryClient.invalidateQueries();
             alert("Web Story created successfully");
         },
         onError: (error) => {

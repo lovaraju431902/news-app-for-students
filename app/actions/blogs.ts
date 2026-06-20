@@ -1,6 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { searchBlogs } from "@/lib/search-service";
+import { revalidatePath } from "next/cache";
+import { redis } from "@/lib/redis";
 
 export async function getTagsAction() {
   try {
@@ -61,6 +64,7 @@ export async function createBlogAction(data: {
   excerpt?: string;
   featuredImg?: string;
   tagIds: string[];
+  seoKeywords?: string;
 }) {
   try {
     const trimmedTitle = data.title.trim();
@@ -93,6 +97,7 @@ export async function createBlogAction(data: {
         content: data.content,
         excerpt: data.excerpt?.trim() || null,
         featuredImg: data.featuredImg?.trim() || null,
+        seoKeywords: data.seoKeywords?.trim() || null,
         tags: {
           create: data.tagIds.map((tagId) => ({
             tagId,
@@ -100,6 +105,9 @@ export async function createBlogAction(data: {
         },
       },
     });
+    revalidatePath("/");
+    revalidatePath("/blogs");
+    revalidatePath("/[category]", "layout");
 
     return { success: true, blog };
   } catch (error: any) {
@@ -107,36 +115,119 @@ export async function createBlogAction(data: {
   }
 }
 
-export async function searchBlogsAction(tagIds: string[]) {
+export async function searchBlogsAction(
+  tagIds: string[],
+  searchQuery?: string,
+  page?: number,
+  limit?: number
+) {
   try {
-    const whereClause =
-      tagIds.length > 0
-        ? {
-          tags: {
-            some: {
-              tagId: {
-                in: tagIds,
-              },
-            },
-          },
+    const cacheKey = `blogs:tags:${(tagIds || []).join(",")}:q:${(searchQuery || "").trim().toLowerCase()}:p:${page || "all"}:l:${limit || "all"}`;
+    
+    if (redis.isConfigured) {
+      try {
+        const cached = await redis.get<{ blogs: any[]; totalCount: number }>(cacheKey);
+        if (cached) {
+          return { success: true, blogs: cached.blogs, totalCount: cached.totalCount };
         }
-        : {};
+      } catch (err) {
+        console.error("Redis read error in searchBlogsAction:", err);
+      }
+    }
 
-    const blogs = await prisma.blog.findMany({
-      where: whereClause,
-      include: {
-        tags: {
-          include: {
-            tag: true,
+    let blogIds: string[] | null = null;
+
+    if (searchQuery && searchQuery.trim()) {
+      const ftsResults = await searchBlogs(searchQuery.trim(), 100);
+      blogIds = ftsResults.map((r) => r.id);
+    }
+
+    const whereClause: any = {};
+
+    if (tagIds && tagIds.length > 0) {
+      whereClause.tags = {
+        some: {
+          tagId: {
+            in: tagIds,
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+      };
+    }
 
-    return { success: true, blogs };
+    if (blogIds !== null) {
+      whereClause.id = {
+        in: blogIds,
+      };
+    }
+
+    let blogs: any[] = [];
+    let totalCount = 0;
+
+    if (blogIds !== null) {
+      // Full-text search scenario: FTS results are limited to 100 items max
+      const allMatchingBlogs = await prisma.blog.findMany({
+        where: whereClause,
+        include: {
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+        },
+      });
+
+      // Sort by their rank/order from FTS
+      const idOrder = new Map(blogIds.map((id, index) => [id, index]));
+      allMatchingBlogs.sort((a, b) => {
+        const orderA = idOrder.get(a.id) ?? 999999;
+        const orderB = idOrder.get(b.id) ?? 999999;
+        return orderA - orderB;
+      });
+
+      totalCount = allMatchingBlogs.length;
+
+      if (page && limit) {
+        blogs = allMatchingBlogs.slice((page - 1) * limit, page * limit);
+      } else {
+        blogs = allMatchingBlogs;
+      }
+    } else {
+      // Standard listing/tag filtering scenario: paginate in DB
+      totalCount = await prisma.blog.count({
+        where: whereClause,
+      });
+
+      const findOptions: any = {
+        where: whereClause,
+        include: {
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      };
+
+      if (page && limit) {
+        findOptions.take = limit;
+        findOptions.skip = (page - 1) * limit;
+      }
+
+      blogs = await prisma.blog.findMany(findOptions);
+    }
+
+    if (redis.isConfigured && blogs.length > 0) {
+      try {
+        await redis.set(cacheKey, { blogs, totalCount }, { ex: 300 });
+      } catch (err) {
+        console.error("Redis write error in searchBlogsAction:", err);
+      }
+    }
+
+    return { success: true, blogs, totalCount };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to fetch blogs." };
   }
@@ -144,6 +235,18 @@ export async function searchBlogsAction(tagIds: string[]) {
 
 export async function getBlogBySlugAction(slug: string) {
   try {
+    const cacheKey = `blog:slug:${slug}`;
+    if (redis.isConfigured) {
+      try {
+        const cached = await redis.get<any>(cacheKey);
+        if (cached) {
+          return { success: true, blog: cached };
+        }
+      } catch (err) {
+        console.error("Redis read error in getBlogBySlugAction:", err);
+      }
+    }
+
     const blog = await prisma.blog.findUnique({
       where: { slug },
       include: {
@@ -154,6 +257,15 @@ export async function getBlogBySlugAction(slug: string) {
         },
       },
     });
+
+    if (redis.isConfigured && blog) {
+      try {
+        await redis.set(cacheKey, blog, { ex: 300 });
+      } catch (err) {
+        console.error("Redis write error in getBlogBySlugAction:", err);
+      }
+    }
+
     return { success: true, blog };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to fetch blog." };
@@ -180,9 +292,26 @@ export async function getBlogByIdAction(id: string) {
 
 export async function deleteBlogAction(id: string) {
   try {
+    const blog = await prisma.blog.findUnique({
+      where: { id },
+      select: { slug: true },
+    });
+
     await prisma.blog.delete({
       where: { id },
     });
+
+    if (redis.isConfigured && blog) {
+      try {
+        await redis.del(`blog:slug:${blog.slug}`);
+      } catch (err) {
+        console.error("Redis invalidate error in deleteBlogAction:", err);
+      }
+    }
+
+    revalidatePath("/");
+    revalidatePath("/blogs");
+    revalidatePath("/[category]", "layout");
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to delete blog." };
@@ -198,6 +327,7 @@ export async function updateBlogAction(
     excerpt?: string;
     featuredImg?: string;
     tagIds: string[];
+    seoKeywords?: string;
   }
 ) {
   try {
@@ -216,6 +346,11 @@ export async function updateBlogAction(
     if (!data.content.trim()) {
       return { success: false, error: "Content is required." };
     }
+
+    const currentBlog = await prisma.blog.findUnique({
+      where: { id },
+      select: { slug: true },
+    });
 
     // Check slug uniqueness (excluding current blog)
     const existingBlog = await prisma.blog.findFirst({
@@ -242,6 +377,7 @@ export async function updateBlogAction(
         content: data.content,
         excerpt: data.excerpt?.trim() || null,
         featuredImg: data.featuredImg?.trim() || null,
+        seoKeywords: data.seoKeywords?.trim() || null,
         tags: {
           create: data.tagIds.map((tagId) => ({
             tagId,
@@ -249,6 +385,19 @@ export async function updateBlogAction(
         },
       },
     });
+
+    if (redis.isConfigured && currentBlog) {
+      try {
+        await redis.del(`blog:slug:${currentBlog.slug}`);
+        await redis.del(`blog:slug:${trimmedSlug}`);
+      } catch (err) {
+        console.error("Redis invalidate error in updateBlogAction:", err);
+      }
+    }
+
+    revalidatePath("/");
+    revalidatePath("/blogs");
+    revalidatePath("/[category]", "layout");
 
     return { success: true, blog };
   } catch (error: any) {

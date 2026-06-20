@@ -136,13 +136,43 @@ export default function YouMayLike() {
   useEffect(() => {
     if (YouMayLikedata) {
 
-      console.log("1 st data", YouMayLikedata.data)
+      // console.log("1 st data", YouMayLikedata.data)
 
     }
   }, [YouMayLikedata?.data]);
 
 
   const adItemsData = YouMayLikedata?.data || [];
+
+  if (YouMayLikeisLoading || YouMayLikeError) {
+    return (
+      <section className="p-3 w-full lg:pl-[195px] mb-8">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between border-b border-gray-200 pb-2.5 mb-6">
+          <div className="h-5 bg-zinc-200 rounded w-32 animate-pulse"></div>
+        </div>
+
+        {/* Responsive Grid Skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <div key={idx} className="flex flex-col h-full bg-white rounded-lg">
+              {/* Thumbnail Placeholder */}
+              <div className="relative aspect-[16/10] w-full rounded-lg bg-zinc-200 animate-pulse mb-3"></div>
+
+              {/* Text detail Placeholders */}
+              <div className="flex-grow flex flex-col mb-4 space-y-2">
+                <div className="h-4 bg-zinc-200 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-zinc-200 rounded w-3/4 animate-pulse"></div>
+                <div className="h-3 bg-zinc-200 rounded w-5/6 animate-pulse mt-2"></div>
+                <div className="h-3 bg-zinc-200 rounded w-2/3 animate-pulse"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
 
 
 

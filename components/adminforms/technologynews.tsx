@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const TechnologySchema = z.object({
     title: z.string().min(3, "Title is required"),
@@ -37,6 +37,7 @@ export const TechnologySchema = z.object({
 export type TechnologyValues = z.infer<typeof TechnologySchema>;
 
 export default function TechnologyNewsForm() {
+    const queryClient = useQueryClient();
     const [loading, setLoading] = useState(false);
 
     const {
@@ -92,6 +93,7 @@ export default function TechnologyNewsForm() {
 
         onSuccess: (data) => {
             console.log(data);
+            queryClient.invalidateQueries();
             alert("Technology news created successfully");
         },
 

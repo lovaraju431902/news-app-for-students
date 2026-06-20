@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const TrendingNowSchema = z.object({
     title: z.string().min(3, "Title is required"),
@@ -37,6 +37,7 @@ export const TrendingNowSchema = z.object({
 export type TrendingFormValues = z.infer<typeof TrendingNowSchema>;
 
 export default function TrendingnewsForm() {
+    const queryClient = useQueryClient();
     const [loading, setLoading] = useState(false);
 
     const {
@@ -96,6 +97,7 @@ export default function TrendingnewsForm() {
 
         onSuccess: (data) => {
             console.log(data);
+            queryClient.invalidateQueries();
             alert("Trending news created successfully");
         },
 

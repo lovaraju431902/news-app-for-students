@@ -1,16 +1,16 @@
 "use client"
-import React from "react";
+
 import { GraduationCap, Send, Mail } from "lucide-react";
 
 export default function Footer() {
   const categories = [
-    { name: "Govt Jobs", href: "/tags/govtjobs" },
-    { name: "Results", href: "/tags/results" },
-    { name: "Admit Cards", href: "/tags/admit-cards" },
-    { name: "Scholarships", href: "/tags/scholarships" },
-    { name: "Tech News", href: "/tags/tech-news" },
-    { name: "Study Tips", href: "/tags/study-tips" },
-    { name: "Exam Prep", href: "/tags/exam-prep" }
+    { name: "Part Time Income", href: "/part-time-income" },
+    { name: "Share Market", href: "/share-market" },
+    { name: "Instagram", href: "/instagram" },
+    { name: "YouTube Growth", href: "/youtube-growth" },
+    { name: "Scholarships", href: "/scholarships" },
+    { name: "Current Affairs", href: "/current-affairs" },
+    { name: "InternShips", href: "/internships" },
   ];
 
   const quickLinks = [

@@ -185,7 +185,7 @@ export default function WebStoriesAndVideos() {
   useEffect(() => {
     if (Videosdata) {
 
-      console.log("1 st data", Videosdata.data)
+      // console.log("1 st data", Videosdata.data)
 
     }
   }, [Videosdata?.data]);
@@ -196,7 +196,7 @@ export default function WebStoriesAndVideos() {
 
 
 
-  if (VideosisLoading) {
+  if (VideosisLoading || WebstoresisLoading || VideosError || WebstoresError) {
 
     return (
 

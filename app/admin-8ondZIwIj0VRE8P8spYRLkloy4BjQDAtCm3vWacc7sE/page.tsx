@@ -15,9 +15,11 @@ import {
   Shield,
   Loader2,
   Inbox,
-  ArrowLeft
+  ArrowLeft,
+  LogOut
 } from "lucide-react";
 import { getAdminBlogsAction, deleteBlogAction } from "../actions/blogs";
+import { logoutAction } from "../actions/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Tag {
@@ -99,8 +101,8 @@ export default function AdminDashboardPage() {
       return id;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-blogs"] });
-      queryClient.invalidateQueries({ queryKey: ["blogs"] });
+      // Invalidate all query caches so front-end components automatically reload latest data
+      queryClient.invalidateQueries();
     },
     onError: (err: any) => {
       if (err.message !== "Cancelled") {
@@ -146,12 +148,23 @@ export default function AdminDashboardPage() {
             View Blogs List
           </Link>
           <Link
-            href="/admin/richeditor"
+            href="/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE/richeditor"
             className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-md shadow-blue-500/15 flex items-center gap-1.5"
           >
             <Plus className="w-4 h-4" />
             Create Blog Post
           </Link>
+          <button
+            onClick={async () => {
+              await logoutAction();
+              window.location.href = "/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE/login";
+            }}
+            className="px-3 py-1.5 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg text-xs font-semibold text-red-600 dark:text-red-400 transition-colors flex items-center gap-1.5"
+            title="Logout from Admin Panel"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Logout
+          </button>
         </div>
       </header>
 
@@ -226,7 +239,7 @@ export default function AdminDashboardPage() {
                 You haven't written any news or tech blogs yet. Start creating your first post.
               </p>
               <Link
-                href="/admin/richeditor"
+                href="/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE/richeditor"
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
@@ -275,8 +288,8 @@ export default function AdminDashboardPage() {
                               <span
                                 key={tag.id}
                                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${tag.parentId
-                                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-550 dark:text-zinc-400"
-                                    : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                  ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-550 dark:text-zinc-400"
+                                  : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                                   }`}
                               >
                                 {tag.name}
@@ -318,7 +331,7 @@ export default function AdminDashboardPage() {
                           })()}
 
                           <Link
-                            href={`/admin/richeditor?edit=${blog.id}`}
+                            href={`/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE/richeditor?edit=${blog.id}`}
                             className="p-2 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-850 rounded-lg text-zinc-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors inline-block"
                             title="Edit article"
                           >

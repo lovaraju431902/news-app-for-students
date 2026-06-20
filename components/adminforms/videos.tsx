@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const VideoSchema = z.object({
     title: z.string().min(3, "Title is required"),
@@ -27,6 +27,7 @@ export const VideoSchema = z.object({
 export type VideoFormValues = z.infer<typeof VideoSchema>;
 
 export default function VideoForm() {
+    const queryClient = useQueryClient();
     const {
         register,
         handleSubmit,
@@ -65,6 +66,7 @@ export default function VideoForm() {
     const mutation = useMutation({
         mutationFn: createVideo,
         onSuccess: () => {
+            queryClient.invalidateQueries();
             alert("Video created successfully");
         },
         onError: (error) => {

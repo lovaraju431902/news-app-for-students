@@ -43,52 +43,56 @@ export default function VideoGallery() {
 
   useEffect(() => {
     if (Videogallerydata) {
-      console.log("video gallery data", Videogallerydata.data);
+      //console.log("video gallery data", Videogallerydata.data);
     }
   }, [Videogallerydata?.data]);
 
   const videos = Videogallerydata?.data || [];
 
-  if (VideogalleryisLoading) {
+  if (VideogalleryisLoading || VideogalleryError) {
     return (
-      <section className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 md:p-6 shadow-sm animate-pulse">
+      <section className="w-full lg:pl-[195px]  mt-5 spx-4 sm:px-6 lg:px-8 py-6">
+        <div className="">
+          <div className=" animate-pulse">
             {/* Heading Skeleton */}
-            <div className="h-7 bg-gray-250 rounded-md w-40 mb-6"></div>
+            <div className="h-7 ml-5 bg-zinc-200 rounded-md w-40 mb-6"></div>
 
             {/* Top Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
               {/* Featured Video Skeleton */}
-              <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex flex-col md:flex-row gap-4">
-                <div className="relative w-full md:w-[55%] aspect-video bg-gray-250 rounded-lg overflow-hidden shrink-0"></div>
+              <div className="lg:col-span-2  p-4 flex flex-col md:flex-row gap-4">
+                <div className="relative w-full md:w-[55%] aspect-video bg-zinc-200 rounded-lg overflow-hidden shrink-0"></div>
                 <div className="flex-1 space-y-3 py-1">
-                  <div className="h-4 bg-gray-250 rounded w-1/4"></div>
+                  <div className="h-4 bg-zinc-200 rounded w-1/4"></div>
                   <div className="space-y-2">
-                    <div className="h-5 bg-gray-250 rounded w-full"></div>
-                    <div className="h-5 bg-gray-250 rounded w-5/6"></div>
-                    <div className="h-5 bg-gray-250 rounded w-2/3"></div>
+                    <div className="h-5 bg-zinc-200 rounded w-full"></div>
+                    <div className="h-5 bg-zinc-200 rounded w-5/6"></div>
+                    <div className="h-5 bg-zinc-200 rounded w-2/3"></div>
                   </div>
                 </div>
               </div>
 
               {/* Side Videos Skeleton */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col pl-4 gap-4">
                 {[1, 2].map((i) => (
-                  <div key={i} className="flex gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                    <div className="relative w-28 sm:w-36 aspect-video bg-gray-250 rounded-lg shrink-0 overflow-hidden"></div>
+                  <div key={i} className="flex gap-3 ">
+                    <div className="relative w-28 sm:w-36 aspect-video bg-zinc-200 rounded-lg shrink-0 overflow-hidden"></div>
                     <div className="flex-1 space-y-2 py-1">
-                      <div className="h-3 bg-gray-250 rounded w-1/3"></div>
-                      <div className="h-4 bg-gray-250 rounded w-full"></div>
-                      <div className="h-4 bg-gray-250 rounded w-2/3"></div>
+                      <div className="h-3 bg-zinc-200 rounded w-1/3"></div>
+                      <div className="h-4 bg-zinc-200 rounded w-full"></div>
+                      <div className="h-4 bg-zinc-200 rounded w-2/3"></div>
                     </div>
                   </div>
                 ))}
               </div>
+
+
+
+
             </div>
 
             {/* Bottom Grid Skeleton */}
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
+            {/* <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden p-3 space-y-3">
                   <div className="aspect-video bg-gray-250 rounded-lg overflow-hidden"></div>
@@ -99,7 +103,30 @@ export default function VideoGallery() {
                   </div>
                 </div>
               ))}
+            </div> */}
+
+
+
+
+
+            <div className="grid grid-cols-2 mt-5 ml-3 lg:grid-cols-5 gap-6">
+              {Array.from({ length: 5 }).map((_, idx) => (
+                <div key={idx} className="flex flex-col h-full bg-white rounded-lg">
+                  {/* Thumbnail Placeholder */}
+                  <div className="relative aspect-[16/10] w-full rounded-lg bg-zinc-200 animate-pulse mb-3"></div>
+
+                  {/* Text detail Placeholders */}
+                  <div className="flex-grow flex flex-col mb-4 space-y-2">
+                    <div className="h-4 bg-zinc-200 rounded w-full animate-pulse"></div>
+                    <div className="h-4 bg-zinc-200 rounded w-3/4 animate-pulse"></div>
+                    <div className="h-3 bg-zinc-200 rounded w-5/6 animate-pulse mt-2"></div>
+                    <div className="h-3 bg-zinc-200 rounded w-2/3 animate-pulse"></div>
+                  </div>
+                </div>
+              ))}
             </div>
+
+
           </div>
         </div>
       </section>
@@ -128,13 +155,13 @@ export default function VideoGallery() {
             {/* Featured Video */}
             {(() => {
               const cardContent = (
-                <div className="flex flex-col md:flex-row h-full">
+                <div className="flex flex-col p-2 md:flex-row h-full">
                   <div className="relative w-full md:w-[55%] aspect-video overflow-hidden">
                     <Image
                       src={featuredVideo.image}
                       alt={featuredVideo.title}
                       fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="object-cover group-hover:scale-105 rounded-lg transition-transform duration-500"
                       sizes="(max-width: 768px) 100vw, 400px"
                     />
 
@@ -158,11 +185,11 @@ export default function VideoGallery() {
               );
 
               return featuredVideo.href ? (
-                <Link href={featuredVideo.href} className="lg:col-span-2 group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden block">
+                <Link href={featuredVideo.href} className="lg:col-span-2 group bg-white rounded-xl border border-gray-100  transition-all duration-300 overflow-hidden block">
                   {cardContent}
                 </Link>
               ) : (
-                <div className="lg:col-span-2 group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                <div className="lg:col-span-2 group bg-white rounded-xl border border-gray-100  transition-all duration-300 overflow-hidden">
                   {cardContent}
                 </div>
               );

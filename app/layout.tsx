@@ -51,6 +51,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} ${inter.variable} ${playfairDisplay.variable} ${notoSansTelugu.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

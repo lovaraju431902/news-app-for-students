@@ -8,13 +8,14 @@ datasource db {
 }
 
 model Blog {
-  id          String  @id @default(cuid())
-  title       String
-  slug        String  @unique
-  content     String
-  excerpt     String?
-  featuredImg String?
-  seoKeywords String?
+  id            String  @id @default(cuid())
+  title         String
+  slug          String  @unique
+  content       String
+  excerpt       String?
+  featuredImg   String?
+  seoKeywords   String?
+  search_vector Unsupported("tsvector")?
 
   tags BlogTag[]
 
@@ -22,6 +23,7 @@ model Blog {
   updatedAt DateTime @updatedAt
 
   @@index([createdAt(sort: Desc)])
+  @@index([search_vector], type: Gin)
 }
 
 model Tag {
@@ -66,6 +68,8 @@ model SlideData {
   isActive  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }
 
 model RightCards {
@@ -78,6 +82,8 @@ model RightCards {
   href      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }
 
 model LatestNews {
@@ -92,6 +98,8 @@ model LatestNews {
   href      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }
 
 model TrendingNews {
@@ -103,6 +111,8 @@ model TrendingNews {
   href      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }
 
 model PopularTopics {
@@ -113,6 +123,8 @@ model PopularTopics {
   isActive   Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }
 
 model StudyMaterial {
@@ -122,6 +134,8 @@ model StudyMaterial {
   isActive  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }
 
 model TechnologyNews {
@@ -132,6 +146,8 @@ model TechnologyNews {
   href      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }
 
 model WebStory {
@@ -142,6 +158,8 @@ model WebStory {
   href      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }
 
 model Video {
@@ -153,6 +171,8 @@ model Video {
   href      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }
 
 model MostRead {
@@ -163,6 +183,8 @@ model MostRead {
   href      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }
 
 model VideoGallery {
@@ -175,6 +197,8 @@ model VideoGallery {
   href      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }
 
 model YouMayLike {
@@ -186,4 +210,6 @@ model YouMayLike {
   href        String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
 }

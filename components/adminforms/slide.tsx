@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const SlideSchema = z.object({
     title: z.string().min(3, "Title is required"),
@@ -40,6 +40,7 @@ export const SlideSchema = z.object({
 export type SlideFormValues = z.infer<typeof SlideSchema>;
 
 export default function SlideForm() {
+    const queryClient = useQueryClient();
     const [loading, setLoading] = useState(false);
 
     const {
@@ -102,6 +103,7 @@ export default function SlideForm() {
 
         onSuccess: (data) => {
             console.log(data);
+            queryClient.invalidateQueries();
             alert("Slide created successfully");
         },
 

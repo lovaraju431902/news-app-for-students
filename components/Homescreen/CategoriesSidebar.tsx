@@ -10,10 +10,8 @@ import {
     Building2,
     CalendarDays,
     LayoutDashboardIcon,
-    ChevronLeft,
-    ChevronRight,
-    Clock,
-    Calendar,
+    
+    
     FileText,
     Wallet,
     TrendingUp,
@@ -25,9 +23,6 @@ import {
     Globe,
     Scissors,
     Bell,
-    Home,
-    ChevronDown,
-    Menu,
 } from "lucide-react";
 
 
@@ -200,7 +195,8 @@ export default function CategoriesSidebar() {
                     <LayoutDashboardIcon className="w-4 h-4 text-primary" />
                     <span>Categories</span>
                 </div>
-                <ul className="max-h-[80vh] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full space-y-1">
+                {/*max-h-[80vh]*/}
+                <ul className=" overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full space-y-1">
                     {cats.map((c) => (
                         <li key={c.label}>
                             <Link

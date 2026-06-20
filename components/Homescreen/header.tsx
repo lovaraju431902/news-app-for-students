@@ -1,4 +1,5 @@
-import { Bell, GraduationCap, Mail, Rocket, Search } from "lucide-react";
+import { Bell, GraduationCap, Mail } from "lucide-react";
+import SearchInput from "./SearchInput";
 
 
 export default function Header() {
@@ -32,13 +33,7 @@ export default function Header() {
 
                 {/* Search Bar */}
                 <div className="relative w-full md:flex-1 md:max-w-xl">
-                    <input
-                        placeholder="Search for news, jobs, results, tech.."
-                        className="w-full h-10 pl-4 pr-12 rounded-full bg-white border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"
-                    />
-                    <button className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
-                        <Search className="w-4 h-4" />
-                    </button>
+                    <SearchInput />
                 </div>
 
                 {/* Actions for Desktop */}

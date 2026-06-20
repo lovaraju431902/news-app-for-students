@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const LatestnewsSchema = z.object({
     title: z.string().min(3, "Title is required"),
@@ -39,6 +39,7 @@ export const LatestnewsSchema = z.object({
 export type LatestnewsFormValues = z.infer<typeof LatestnewsSchema>;
 
 export default function LatestNewsForm() {
+    const queryClient = useQueryClient();
     const [loading, setLoading] = useState(false);
 
     const {
@@ -99,6 +100,7 @@ export default function LatestNewsForm() {
 
         onSuccess: (data) => {
             console.log(data);
+            queryClient.invalidateQueries();
             alert("Latest news created successfully");
         },
 

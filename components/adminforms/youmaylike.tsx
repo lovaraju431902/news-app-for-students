@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const YouMayLikeSchema = z.object({
     headline: z.string().min(3, "Headline is required"),
@@ -27,6 +27,7 @@ export const YouMayLikeSchema = z.object({
 export type YouMayLikeFormValues = z.infer<typeof YouMayLikeSchema>;
 
 export default function YouMayLikeForm() {
+    const queryClient = useQueryClient();
     const {
         register,
         handleSubmit,
@@ -65,6 +66,7 @@ export default function YouMayLikeForm() {
     const mutation = useMutation({
         mutationFn: createYouMayLike,
         onSuccess: () => {
+            queryClient.invalidateQueries();
             alert("You May Like item created successfully");
         },
         onError: (error) => {

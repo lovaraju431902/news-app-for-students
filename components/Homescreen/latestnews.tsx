@@ -55,7 +55,7 @@ export default function LatestNews() {
     useEffect(() => {
         if (data) {
 
-            console.log("1 st data", data.data)
+            // console.log("1 st data", data.data)
 
         }
     }, [data?.data]);
@@ -63,7 +63,7 @@ export default function LatestNews() {
 
     const items = data?.data || [];
 
-    if (isLoading) {
+    if (isLoading || error) {
         return (
             <>
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 animate-pulse">

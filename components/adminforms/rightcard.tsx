@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const RightcardSchema = z.object({
     title: z.string().min(3, "Title is required"),
@@ -36,6 +36,7 @@ export const RightcardSchema = z.object({
 export type RightCardFormValues = z.infer<typeof RightcardSchema>;
 
 export default function RightCardForm() {
+    const queryClient = useQueryClient();
     const [loading, setLoading] = useState(false);
 
     const {
@@ -96,6 +97,7 @@ export default function RightCardForm() {
 
         onSuccess: (data) => {
             console.log(data);
+            queryClient.invalidateQueries();
             alert("Slide created successfully");
         },
 

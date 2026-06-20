@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const MostReadSchema = z.object({
     title: z.string().min(3, "Title is required"),
@@ -26,6 +26,7 @@ export const MostReadSchema = z.object({
 export type MostReadFormValues = z.infer<typeof MostReadSchema>;
 
 export default function MostReadForm() {
+    const queryClient = useQueryClient();
     const {
         register,
         handleSubmit,
@@ -63,6 +64,7 @@ export default function MostReadForm() {
     const mutation = useMutation({
         mutationFn: createMostRead,
         onSuccess: () => {
+            queryClient.invalidateQueries();
             alert("Most Read item created successfully");
         },
         onError: (error) => {

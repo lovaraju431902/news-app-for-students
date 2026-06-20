@@ -440,7 +440,7 @@ export default function Sidebar() {
 
                     {/* Middle Column: Main Content */}
                     <div className="flex-grow flex-1 w-full min-w-0 space-y-6">
-                        {isLoading ? <CarouselSkeleton /> : (
+                        {isLoading || error ? <CarouselSkeleton /> : (
                             <div className="flex flex-col lg:flex-row gap-4 w-full">
                                 {/* Carousel */}
                                 <div
@@ -467,6 +467,7 @@ export default function Sidebar() {
                                                         className="object-cover"
                                                         alt={slide.title}
                                                         priority={index === 0}
+                                                        loading={index === 0 ? "eager" : "lazy"}
                                                         sizes="(max-width: 1024px) 100vw, 800px"
                                                     />
 

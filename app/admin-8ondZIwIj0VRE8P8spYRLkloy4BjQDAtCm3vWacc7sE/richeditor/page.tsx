@@ -18,6 +18,7 @@ import {
   Globe,
   Plus,
   Loader2,
+  SlidersHorizontal,
 } from "lucide-react";
 import { CodeBlock } from "@/components/ui/code-block";
 import {
@@ -111,6 +112,15 @@ export default HelloWorld;</code></pre>
 <p>Try testing it yourself! Insert links, apply bold, italic, or blockquote formatting, and look at the live preview below or on the side to see the formatting reflect in real-time.</p>
 `;
 
+function preprocessHtmlContent(html: string): string {
+  if (!html) return html;
+  // Regex to match font-size style declarations (e.g. font-size: 20px, font-size:14pt, etc.)
+  const fontSizeRegex = /font-size\s*:\s*([\d\.]+(?:px|pt|em|rem|%|vw|vh))/gi;
+  return html.replace(fontSizeRegex, (match, val) => {
+    return `--original-font-size: ${val}; font-size: min(var(--original-font-size), max(14px, calc(var(--original-font-size) * var(--inline-font-scale, 1))))`;
+  });
+}
+
 // Helper to parse HTML content and replace pre/code blocks with the custom CodeBlock React component
 function renderContentWithCodeBlocks(htmlContent: string) {
   // Loose regex matching any <pre ...><code ...>...</code></pre> regardless of classes or styles
@@ -138,7 +148,7 @@ function renderContentWithCodeBlocks(htmlContent: string) {
       elements.push(
         <div
           key={`text-${keyIndex++}`}
-          dangerouslySetInnerHTML={{ __html: htmlContent.substring(lastIndex, matchIndex) }}
+          dangerouslySetInnerHTML={{ __html: preprocessHtmlContent(htmlContent.substring(lastIndex, matchIndex)) }}
         />
       );
     }
@@ -172,7 +182,7 @@ function renderContentWithCodeBlocks(htmlContent: string) {
     elements.push(
       <div
         key={`text-${keyIndex++}`}
-        dangerouslySetInnerHTML={{ __html: htmlContent.substring(lastIndex) }}
+        dangerouslySetInnerHTML={{ __html: preprocessHtmlContent(htmlContent.substring(lastIndex)) }}
       />
     );
   }
@@ -187,17 +197,71 @@ function RichEditorPageContent() {
   const [activeTab, setActiveTab] = useState<"edit" | "preview" | "both">("both");
   const [fontFamily, setFontFamily] = useState<"serif" | "sans">("serif");
   const [stats, setStats] = useState({ words: 0, characters: 0, readTime: 0 });
+  const [fontSize, setFontSize] = useState(16);
+  const [lineHeight, setLineHeight] = useState(1.6);
+  const [showStyleControls, setShowStyleControls] = useState(true);
 
   // Publishing & Metadata States
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [featuredImg, setFeaturedImg] = useState("");
+  const [seoKeywords, setSeoKeywords] = useState("");
   const [mainCategoryId, setMainCategoryId] = useState<string>("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState("");
   const [newTagParentId, setNewTagParentId] = useState("");
   const [publishMessage, setPublishMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Parse keywords to list
+  const keywordList = seoKeywords ? seoKeywords.split(",").map(k => k.trim()).filter(Boolean) : [];
+
+  const removeKeyword = (kwToRemove: string) => {
+    const newList = keywordList.filter(k => k !== kwToRemove);
+    setSeoKeywords(newList.join(", "));
+  };
+
+  const addKeyword = (newKw: string) => {
+    const trimmed = newKw.trim();
+    if (!trimmed) return;
+    const parts = trimmed.split(",").map(p => p.trim()).filter(Boolean);
+    const updated = Array.from(new Set([...keywordList, ...parts]));
+    setSeoKeywords(updated.join(", "));
+  };
+
+  const handleAutoGenerateKeywords = () => {
+    const keywordsSet = new Set<string>();
+    
+    if (title.trim()) {
+      const cleanTitle = title.replace(/[^\w\s-]/g, "").toLowerCase();
+      keywordsSet.add(cleanTitle.trim());
+      
+      const words = cleanTitle.split(/\s+/).filter(w => w.length > 3);
+      words.forEach(w => keywordsSet.add(w));
+    }
+    
+    if (mainCategoryId) {
+      const cat = dbTags.find(t => t.id === mainCategoryId);
+      if (cat) {
+        keywordsSet.add(cat.name.toLowerCase());
+      }
+    }
+
+    if (title.toLowerCase().includes("earn") || title.toLowerCase().includes("money") || title.toLowerCase().includes("income") || title.toLowerCase().includes("instagram")) {
+      keywordsSet.add("how to earn money");
+      keywordsSet.add("earn money online");
+      keywordsSet.add("earning tips");
+      keywordsSet.add("instagram money");
+      keywordsSet.add("earn from instagram");
+    }
+    if (title.toLowerCase().includes("telugu") || title.toLowerCase().includes("student")) {
+      keywordsSet.add("telugu students");
+      keywordsSet.add("earning tips for telugu students");
+    }
+
+    const merged = Array.from(keywordsSet);
+    setSeoKeywords(merged.join(", "));
+  };
 
   // Edit Mode states
   const searchParams = useSearchParams();
@@ -240,6 +304,7 @@ function RichEditorPageContent() {
       setExcerpt(blogToEdit.excerpt || "");
       setFeaturedImg(blogToEdit.featuredImg || "");
       setContent(blogToEdit.content);
+      setSeoKeywords((blogToEdit as any).seoKeywords || "");
 
       const blogTagIds = blogToEdit.tags.map((bt: any) => bt.tagId);
       const mainTag = blogToEdit.tags.find((bt: any) =>
@@ -259,6 +324,14 @@ function RichEditorPageContent() {
       setIsEditMode(true);
     } else if (!editId) {
       setIsEditMode(false);
+      setTitle("");
+      setSlug("");
+      setExcerpt("");
+      setFeaturedImg("");
+      setContent(INITIAL_CONTENT);
+      setSeoKeywords("");
+      setMainCategoryId("");
+      setSelectedTagIds([]);
     }
   }, [blogToEdit, editId]);
 
@@ -323,6 +396,7 @@ function RichEditorPageContent() {
           excerpt,
           featuredImg,
           tagIds,
+          seoKeywords,
         });
       } else {
         res = await createBlogAction({
@@ -332,6 +406,7 @@ function RichEditorPageContent() {
           excerpt,
           featuredImg,
           tagIds,
+          seoKeywords,
         });
       }
 
@@ -348,11 +423,8 @@ function RichEditorPageContent() {
           ? "Blog post updated successfully!"
           : "Blog post published successfully!"
       });
-      queryClient.invalidateQueries({ queryKey: ["admin-blogs"] });
-      queryClient.invalidateQueries({ queryKey: ["blogs"] });
-      if (editId) {
-        queryClient.invalidateQueries({ queryKey: ["blog-edit", editId] });
-      }
+      // Invalidate all query caches so front-end components automatically reload latest data
+      queryClient.invalidateQueries();
     },
     onError: (err: any) => {
       setPublishMessage({ type: "error", text: err.message });
@@ -596,6 +668,70 @@ function RichEditorPageContent() {
                   />
                 </div>
 
+                {/* SEO Keywords Tag Input */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      SEO Keywords / Meta Tags
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleAutoGenerateKeywords}
+                      className="text-[10px] font-bold text-blue-500 hover:underline flex items-center gap-0.5"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      Auto-generate
+                    </button>
+                  </div>
+
+                  {/* Badges display */}
+                  {keywordList.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 p-2 border border-dashed border-zinc-200 dark:border-zinc-805 rounded-xl bg-zinc-50/30 dark:bg-zinc-900/10">
+                      {keywordList.map((kw, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border border-blue-100/50 dark:border-blue-900/30"
+                        >
+                          {kw}
+                          <button
+                            type="button"
+                            onClick={() => removeKeyword(kw)}
+                            className="hover:text-red-500 font-bold ml-0.5 transition-colors focus:outline-none"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <input
+                    type="text"
+                    placeholder="Type keyword and press Enter or use commas..."
+                    className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-850 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === ",") {
+                        e.preventDefault();
+                        const val = e.currentTarget.value;
+                        if (val) {
+                          addKeyword(val);
+                          e.currentTarget.value = "";
+                        }
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const val = e.currentTarget.value;
+                      if (val) {
+                        addKeyword(val);
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                  />
+                  <span className="text-[10px] text-zinc-400 block leading-normal">
+                    Enter keywords separated by commas or press Enter. E.g., "earn from instagram", "earning tips for telugu students".
+                  </span>
+                </div>
+
                 {/* Database Tags selection */}
                 <div className="space-y-4">
                   {/* Compulsory Main Category Selection */}
@@ -793,6 +929,20 @@ function RichEditorPageContent() {
 
           {/* View Toggles & Font settings */}
           <div className="flex items-center gap-3">
+            {/* Typography Controls Toggle */}
+            <button
+              type="button"
+              onClick={() => setShowStyleControls(!showStyleControls)}
+              className={`p-2 border rounded-lg transition-colors flex items-center justify-center ${
+                showStyleControls
+                  ? "bg-blue-500/10 border-blue-500/30 text-blue-500"
+                  : "bg-zinc-100 dark:bg-zinc-900 border-zinc-200/50 dark:border-zinc-800/50 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+              }`}
+              title="Toggle Typography Adjustment Panel"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </button>
+
             {/* Font Toggle */}
             <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
               <button
@@ -879,6 +1029,56 @@ function RichEditorPageContent() {
           </div>
         </div>
 
+        {/* DYNAMIC TYPOGRAPHY CONTROLS (Font Size & Line Height) */}
+        {showStyleControls && (
+          <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-6 py-4 rounded-xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg">
+                <SlidersHorizontal className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                  Typography Settings
+                </h3>
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">
+                  Dynamically adjust content font size and line-spacing for the editor & live preview.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-6 flex-1 justify-end">
+              {/* Font Size slider */}
+              <div className="flex items-center gap-3 min-w-[200px] flex-1 sm:flex-initial">
+                <span className="text-xs font-bold text-zinc-550 dark:text-zinc-450 select-none w-18 shrink-0">Text Size:</span>
+                <input
+                  type="range"
+                  min="12"
+                  max="32"
+                  value={fontSize}
+                  onChange={(e) => setFontSize(Number(e.target.value))}
+                  className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+                <span className="font-mono text-xs font-bold text-zinc-800 dark:text-zinc-300 w-10 text-right shrink-0">{fontSize}px</span>
+              </div>
+
+              {/* Line Height slider */}
+              <div className="flex items-center gap-3 min-w-[200px] flex-1 sm:flex-initial">
+                <span className="text-xs font-bold text-zinc-550 dark:text-zinc-450 select-none w-18 shrink-0">Line Height:</span>
+                <input
+                  type="range"
+                  min="1.0"
+                  max="3.0"
+                  step="0.1"
+                  value={lineHeight}
+                  onChange={(e) => setLineHeight(Number(e.target.value))}
+                  className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+                <span className="font-mono text-xs font-bold text-zinc-800 dark:text-zinc-300 w-8 text-right shrink-0">{lineHeight}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* WORKSPACE PANELS */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0 items-stretch">
 
@@ -891,7 +1091,12 @@ function RichEditorPageContent() {
                   Rich Text Workspace
                 </span>
               </div>
-              <RichEditor content={content} onChange={setContent} />
+              <RichEditor 
+                content={content} 
+                onChange={setContent} 
+                fontSize={fontSize}
+                lineHeight={lineHeight}
+              />
             </div>
           )}
 
@@ -931,18 +1136,27 @@ function RichEditorPageContent() {
 
                   {/* RENDERED RICH HTML WITH DYNAMIC CODEBLOCKS */}
                   <div
+                    style={{
+                      "--editor-line-height": lineHeight,
+                      "--editor-font-size": `${fontSize}px`,
+                    } as React.CSSProperties}
                     className="article-preview-content prose max-w-none text-zinc-850 dark:text-zinc-200 leading-relaxed
-                      [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mt-6 [&_h1]:mb-4 [&_h1]:tracking-tight [&_h1]:text-zinc-900 [&_h1]:dark:text-white
-                      [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-zinc-900 [&_h2]:dark:text-zinc-100
-                      [&_h3]:text-xl [&_h3]:font-bold [&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-zinc-850 [&_h3]:dark:text-zinc-200
-                      [&_p]:mb-5 [&_p]:text-base [&_p]:leading-relaxed
-                      [&_blockquote]:border-l-4 [&_blockquote]:border-blue-500 [&_blockquote]:py-3.5 [&_blockquote]:px-5 [&_blockquote]:rounded-r-xl [&_blockquote]:bg-blue-50/50 [&_blockquote]:dark:bg-blue-950/20 [&_blockquote]:italic [&_blockquote]:my-5 [&_blockquote]:text-zinc-600 [&_blockquote]:dark:text-zinc-400 [&_blockquote]:text-lg
+                      [&_h1]:[font-size:calc(var(--responsive-font-size,16px)*1.875)]
+                      [&_h1]:font-bold [&_h1]:mt-6 [&_h1]:mb-4 [&_h1]:tracking-tight [&_h1]:text-zinc-900 [&_h1]:dark:text-white
+                      [&_h2]:[font-size:calc(var(--responsive-font-size,16px)*1.5)]
+                      [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-zinc-900 [&_h2]:dark:text-zinc-100
+                      [&_h3]:[font-size:calc(var(--responsive-font-size,16px)*1.25)]
+                      [&_h3]:font-bold [&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-zinc-850 [&_h3]:dark:text-zinc-200
+                      [&_p]:mb-5 [&_p]:[font-size:var(--responsive-font-size,16px)] [&_p]:[line-height:var(--editor-line-height,1.6)]
+                      [&_blockquote]:border-l-4 [&_blockquote]:border-blue-500 [&_blockquote]:py-3.5 [&_blockquote]:px-5 [&_blockquote]:rounded-r-xl [&_blockquote]:bg-blue-50/50 [&_blockquote]:dark:bg-blue-950/20 [&_blockquote]:italic [&_blockquote]:my-5 [&_blockquote]:text-zinc-655 [&_blockquote]:dark:text-zinc-350 [&_blockquote]:[font-size:calc(var(--responsive-font-size,16px)*1.125)] [&_blockquote]:[line-height:var(--editor-line-height,1.6)]
+                      
+                      [&_.callout-box]:[font-size:var(--responsive-font-size,16px)] [&_.callout-box]:[line-height:var(--editor-line-height,1.6)]
                       
                       [&_mark]:px-1 [&_mark]:py-0.5 [&_mark]:rounded-md
                       
                       [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-5 [&_ul]:space-y-1
                       [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-5 [&_ol]:space-y-1
-                      [&_li]:text-zinc-800 [&_li]:dark:text-zinc-350
+                      [&_li]:text-zinc-800 [&_li]:dark:text-zinc-350 [&_li]:[font-size:var(--responsive-font-size,16px)] [&_li]:[line-height:var(--editor-line-height,1.6)]
                       
                       [&_a]:text-blue-500 [&_a]:hover:text-blue-600 [&_a]:underline [&_a]:transition-colors
                       

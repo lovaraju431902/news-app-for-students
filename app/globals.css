@@ -131,3 +131,100 @@
     text-rendering: optimizeLegibility;
   }
 }
+
+/* Callout / Highlight Box Custom styles */
+.callout-box {
+  border: 1px solid transparent;
+  padding: 1.25rem 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  margin: 1.5rem 0;
+  font-style: normal;
+  display: block;
+}
+
+.callout-box[data-color="green"] {
+  border-color: #bbf7d0;
+  background-color: #f0fdf4;
+}
+.dark .callout-box[data-color="green"] {
+  border-color: rgba(16, 185, 129, 0.2);
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+.callout-box[data-color="blue"] {
+  border-color: #bae6fd;
+  background-color: #f0f9ff;
+}
+.dark .callout-box[data-color="blue"] {
+  border-color: rgba(14, 165, 233, 0.2);
+  background-color: rgba(14, 165, 233, 0.08);
+}
+
+.callout-box[data-color="yellow"] {
+  border-color: #fef08a;
+  background-color: #fffbeb;
+}
+.dark .callout-box[data-color="yellow"] {
+  border-color: rgba(245, 158, 11, 0.2);
+  background-color: rgba(245, 158, 11, 0.08);
+}
+
+.callout-box[data-color="red"] {
+  border-color: #fecaca;
+  background-color: #fef2f2;
+}
+.dark .callout-box[data-color="red"] {
+  border-color: rgba(239, 68, 68, 0.2);
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.callout-box[data-color="purple"] {
+  border-color: #e9d5ff;
+  background-color: #faf5ff;
+}
+.dark .callout-box[data-color="purple"] {
+  border-color: rgba(168, 85, 247, 0.2);
+  background-color: rgba(168, 85, 247, 0.08);
+}
+
+.callout-box[data-color="pink"] {
+  border-color: #fbcfe8;
+  background-color: #fdf2f8;
+}
+.dark .callout-box[data-color="pink"] {
+  border-color: rgba(236, 72, 153, 0.2);
+  background-color: rgba(236, 72, 153, 0.08);
+}
+
+.callout-box[data-color="orange"] {
+  border-color: #ffedd5;
+  background-color: #fff7ed;
+}
+.dark .callout-box[data-color="orange"] {
+  border-color: rgba(249, 115, 22, 0.2);
+  background-color: rgba(249, 115, 22, 0.08);
+}
+
+.callout-box[data-color="black"] {
+  border-color: #e2e8f0;
+  background-color: #f8fafc;
+}
+.dark .callout-box[data-color="black"] {
+  border-color: rgba(63, 63, 70, 0.4);
+  background-color: rgba(39, 39, 42, 0.3);
+}
+
+/* Responsive Font Size Sizing & Pasted HTML Inline Style Overrides */
+.ProseMirror, .article-preview-content {
+  --responsive-font-size: var(--editor-font-size, 16px);
+  --inline-font-scale: 1;
+}
+
+@media (max-width: 768px) {
+  .ProseMirror, .article-preview-content {
+    /* Proportionally scale down the editor font size slider on mobile viewports, clamping at 14px minimum */
+    --responsive-font-size: max(14px, calc(var(--editor-font-size, 16px) * 0.85));
+    --inline-font-scale: 0.85;
+  }
+}

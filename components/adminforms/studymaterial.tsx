@@ -14,7 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const StudymaterialSchema = z.object({
     title: z.string().min(3, "Title is required"),
@@ -32,6 +32,7 @@ export const StudymaterialSchema = z.object({
 export type StudymaterialValues = z.infer<typeof StudymaterialSchema>;
 
 export default function StudyMaterialForm() {
+    const queryClient = useQueryClient();
     const [loading, setLoading] = useState(false);
 
     const {
@@ -91,6 +92,7 @@ export default function StudyMaterialForm() {
 
         onSuccess: (data) => {
             console.log(data);
+            queryClient.invalidateQueries();
             alert("Studymaterial news created successfully");
         },
 

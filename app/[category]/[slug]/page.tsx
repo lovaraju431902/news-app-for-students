@@ -11,12 +11,52 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 import Image from "next/image";
+import type { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{
     category: string;
     slug: string;
   }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { category, slug } = await params;
+  const result = await getBlogBySlugAction(slug);
+
+  if (!result.success || !result.blog) {
+    return {
+      title: "Article Not Found | Students Hub",
+      description: "The requested article could not be found.",
+    };
+  }
+
+  const blog = result.blog;
+  const keywords = blog.seoKeywords
+    ? blog.seoKeywords.split(",").map((k: string) => k.trim()).filter(Boolean)
+    : [];
+
+  const titleText = `${blog.title} | Students Hub`;
+  const descText = blog.excerpt || (blog.content ? blog.content.replace(/<[^>]*>/g, " ").substring(0, 155).trim() + "..." : "");
+
+  return {
+    title: titleText,
+    description: descText,
+    keywords: keywords.length > 0 ? keywords : undefined,
+    openGraph: {
+      title: titleText,
+      description: descText,
+      url: `/${category}/${blog.slug}`,
+      type: "article",
+      images: blog.featuredImg ? [{ url: blog.featuredImg, alt: blog.title }] : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: titleText,
+      description: descText,
+      images: blog.featuredImg ? [blog.featuredImg] : [],
+    },
+  };
 }
 
 export default async function BlogDetailPage({ params }: PageProps) {
@@ -84,20 +124,21 @@ export default async function BlogDetailPage({ params }: PageProps) {
       <Header />
       <Navbar />
 
-      <main className="flex-grow w-full px-4 py-6">
+      <main className="flex-grow w-full">
         <div className="flex flex-col lg:flex-row gap-4 items-start">
 
           {/* Left + Middle Column Wrapper */}
           <div className="flex-grow flex-1 flex flex-col md:flex-row gap-6 w-full min-w-0">
 
             {/* Left Column: Categories Sidebar */}
+
             <CategoriesSidebar />
 
             {/* Middle Column: Blog Content and Recommendations */}
-            <div className="flex-grow flex-1 min-w-0 space-y-12">
+            <div className="flex-grow flex-1 min-w-0 space-y-12 pt-5">
 
               {/* Blog Content (Shadow Removed) */}
-              <div className=" border rounded-xl p-5 md:p-10">
+              <div className=" md:border rounded-xl p-2 md:p-10">
                 <BlogContentRenderer blog={blog as any} inline={true} />
               </div>
 
@@ -220,7 +261,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
           </div>
 
           {/* Right Column: Sidebar (RightRail exactly like in homepage) */}
-          <div className="w-full lg:w-[350px] shrink-0">
+          <div className="w-full lg:w-[350px] shrink-0 pt-5">
             <RightRail />
           </div>
 

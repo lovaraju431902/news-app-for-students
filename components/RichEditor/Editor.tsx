@@ -13,6 +13,7 @@ import { Color } from "@tiptap/extension-color";
 import { Highlight } from "@tiptap/extension-highlight";
 import { CustomImage } from "./CustomImage";
 import { CustomVideo } from "./CustomVideo";
+import { Node, mergeAttributes } from "@tiptap/core";
 import {
   Bold,
   Italic,
@@ -40,14 +41,76 @@ import {
   Baseline,
   Highlighter,
   ChevronDown,
+  Palette,
 } from "lucide-react";
+
+declare module "@tiptap/core" {
+  interface Commands<ReturnType> {
+    callout: {
+      toggleCallout: (attributes?: { color?: string }) => ReturnType;
+    };
+  }
+}
+
+export const Callout = Node.create({
+  name: "callout",
+  group: "block",
+  content: "block+",
+  defining: true,
+
+  addAttributes() {
+    return {
+      color: {
+        default: "green",
+        parseHTML: (element) => element.getAttribute("data-color") || "green",
+        renderHTML: (attributes) => ({
+          "data-color": attributes.color,
+        }),
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: "div.callout-box",
+      },
+      {
+        tag: 'div[data-type="callout"]',
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, {
+        "data-type": "callout",
+        class: "callout-box",
+      }),
+      0,
+    ];
+  },
+
+  addCommands() {
+    return {
+      toggleCallout:
+        (attributes) =>
+        ({ commands }) => {
+          return commands.toggleWrap(this.name, attributes);
+        },
+    };
+  },
+});
 
 interface EditorProps {
   content: string;
   onChange: (html: string) => void;
+  fontSize?: number;
+  lineHeight?: number;
 }
 
-export default function RichEditor({ content, onChange }: EditorProps) {
+export default function RichEditor({ content, onChange, fontSize = 16, lineHeight = 1.6 }: EditorProps) {
   // Modal states for premium URL insertion
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
@@ -62,6 +125,7 @@ export default function RichEditor({ content, onChange }: EditorProps) {
   // Colors dropdowns
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const [showColorBoxPicker, setShowColorBoxPicker] = useState(false);
 
   const TEXT_COLORS = [
     { name: "Default", value: "" },
@@ -113,6 +177,7 @@ export default function RichEditor({ content, onChange }: EditorProps) {
       }),
       CustomImage,
       CustomVideo,
+      Callout,
     ],
     immediatelyRender: false,
     content: content,
@@ -563,10 +628,122 @@ export default function RichEditor({ content, onChange }: EditorProps) {
                 ? "bg-blue-500 text-white"
                 : "hover:bg-zinc-200 dark:hover:bg-zinc-700/60 text-zinc-700 dark:text-zinc-300"
             }`}
-            title="Blockquote"
+            title="Blockquote (Italic Quote Box)"
           >
             <Quote className="w-4 h-4" />
           </button>
+
+          {/* Highlight Box / Color Box Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowColorBoxPicker(!showColorBoxPicker);
+                setShowTextColorPicker(false);
+                setShowBgColorPicker(false);
+              }}
+              className={`p-1.5 rounded-md transition-colors flex items-center gap-0.5 ${
+                editor.isActive("callout")
+                  ? "bg-blue-500 text-white"
+                  : "hover:bg-zinc-200 dark:hover:bg-zinc-700/60 text-zinc-700 dark:text-zinc-300"
+              }`}
+              title="Insert Highlight Box (Color Box)"
+            >
+              <Palette className="w-4 h-4" />
+              <ChevronDown className="w-3 h-3 opacity-60" />
+            </button>
+            {showColorBoxPicker && (
+              <div className="absolute top-9 left-0 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2.5 rounded-xl shadow-2xl z-50 min-w-[150px] flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-zinc-500 px-1 font-sans">Choose Box Color</span>
+                <div className="grid grid-cols-4 gap-2 border-t border-zinc-100 dark:border-zinc-800/80 pt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      editor.chain().focus().toggleCallout({ color: "green" }).run();
+                      setShowColorBoxPicker(false);
+                    }}
+                    className="w-6 h-6 rounded-md border border-emerald-500 bg-[#f0fdf4] hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                    title="Green Box"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      editor.chain().focus().toggleCallout({ color: "blue" }).run();
+                      setShowColorBoxPicker(false);
+                    }}
+                    className="w-6 h-6 rounded-md border border-sky-500 bg-[#f0f9ff] hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                    title="Blue Box"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      editor.chain().focus().toggleCallout({ color: "yellow" }).run();
+                      setShowColorBoxPicker(false);
+                    }}
+                    className="w-6 h-6 rounded-md border border-amber-500 bg-[#fffbeb] hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                    title="Yellow Box"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      editor.chain().focus().toggleCallout({ color: "red" }).run();
+                      setShowColorBoxPicker(false);
+                    }}
+                    className="w-6 h-6 rounded-md border border-red-500 bg-[#fef2f2] hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                    title="Red Box"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      editor.chain().focus().toggleCallout({ color: "purple" }).run();
+                      setShowColorBoxPicker(false);
+                    }}
+                    className="w-6 h-6 rounded-md border border-purple-500 bg-[#faf5ff] hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                    title="Purple Box"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      editor.chain().focus().toggleCallout({ color: "pink" }).run();
+                      setShowColorBoxPicker(false);
+                    }}
+                    className="w-6 h-6 rounded-md border border-pink-500 bg-[#fdf2f8] hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                    title="Pink Box"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      editor.chain().focus().toggleCallout({ color: "orange" }).run();
+                      setShowColorBoxPicker(false);
+                    }}
+                    className="w-6 h-6 rounded-md border border-orange-500 bg-[#fff7ed] hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                    title="Orange Box"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      editor.chain().focus().toggleCallout({ color: "black" }).run();
+                      setShowColorBoxPicker(false);
+                    }}
+                    className="w-6 h-6 rounded-md border border-zinc-800 dark:border-zinc-400 bg-[#f8fafc] dark:bg-zinc-800 hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                    title="Black/Grey Box"
+                  />
+                </div>
+                {editor.isActive("callout") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      editor.chain().focus().toggleCallout().run();
+                      setShowColorBoxPicker(false);
+                    }}
+                    className="text-left text-[10px] font-bold uppercase tracking-wider px-1 py-1 hover:text-red-600 text-red-500 border-t border-zinc-150 dark:border-zinc-800/80 pt-1.5 transition-colors cursor-pointer"
+                  >
+                    Remove Box
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Code Blocks Group */}
@@ -698,18 +875,25 @@ export default function RichEditor({ content, onChange }: EditorProps) {
       </BubbleMenu>
 
       {/* EDITOR CONTENT AREA */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div 
+        className="flex-1 p-6 overflow-y-auto"
+        style={{
+          "--editor-line-height": lineHeight,
+          "--editor-font-size": `${fontSize}px`,
+        } as React.CSSProperties}
+      >
         <EditorContent
           editor={editor}
           className="h-full min-h-[500px] outline-none max-w-none
             [&_.ProseMirror]:min-h-[500px] 
             [&_.ProseMirror]:outline-none 
-            [&_.ProseMirror_p]:leading-relaxed 
+            [&_.ProseMirror_p]:[line-height:var(--editor-line-height,1.6)]
+            [&_.ProseMirror_p]:[font-size:var(--responsive-font-size,16px)]
             [&_.ProseMirror_p]:mb-4
             [&_.ProseMirror_p]:text-zinc-700
             [&_.ProseMirror_p]:dark:text-zinc-300
             
-            [&_.ProseMirror_h1]:text-3xl 
+            [&_.ProseMirror_h1]:[font-size:calc(var(--responsive-font-size,16px)*1.875)]
             [&_.ProseMirror_h1]:font-serif 
             [&_.ProseMirror_h1]:font-bold 
             [&_.ProseMirror_h1]:mt-6 
@@ -717,7 +901,7 @@ export default function RichEditor({ content, onChange }: EditorProps) {
             [&_.ProseMirror_h1]:text-zinc-900
             [&_.ProseMirror_h1]:dark:text-white
             
-            [&_.ProseMirror_h2]:text-2xl 
+            [&_.ProseMirror_h2]:[font-size:calc(var(--responsive-font-size,16px)*1.5)]
             [&_.ProseMirror_h2]:font-serif 
             [&_.ProseMirror_h2]:font-bold 
             [&_.ProseMirror_h2]:mt-5 
@@ -725,7 +909,7 @@ export default function RichEditor({ content, onChange }: EditorProps) {
             [&_.ProseMirror_h2]:text-zinc-900
             [&_.ProseMirror_h2]:dark:text-zinc-100
             
-            [&_.ProseMirror_h3]:text-xl 
+            [&_.ProseMirror_h3]:[font-size:calc(var(--responsive-font-size,16px)*1.25)]
             [&_.ProseMirror_h3]:font-serif 
             [&_.ProseMirror_h3]:font-semibold 
             [&_.ProseMirror_h3]:mt-4 
@@ -737,7 +921,7 @@ export default function RichEditor({ content, onChange }: EditorProps) {
             [&_.ProseMirror_ul]:pl-5 
             [&_.ProseMirror_ul]:mb-4
             [&_.ProseMirror_ul]:text-zinc-700
-            [&_.ProseMirror_ul]:dark:text-zinc-300
+            [&_.ProseMirror_ul]:dark:text-zinc-350
             
             [&_.ProseMirror_ol]:list-decimal 
             [&_.ProseMirror_ol]:pl-5 
@@ -745,8 +929,12 @@ export default function RichEditor({ content, onChange }: EditorProps) {
             [&_.ProseMirror_ol]:text-zinc-700
             [&_.ProseMirror_ol]:dark:text-zinc-300
             
+            [&_.ProseMirror_li]:[line-height:var(--editor-line-height,1.6)]
+            [&_.ProseMirror_li]:[font-size:var(--responsive-font-size,16px)]
             [&_.ProseMirror_li]:mb-1
             
+            [&_.ProseMirror_blockquote]:[line-height:var(--editor-line-height,1.6)]
+            [&_.ProseMirror_blockquote]:[font-size:calc(var(--responsive-font-size,16px)*1.125)]
             [&_.ProseMirror_blockquote]:border-l-4 
             [&_.ProseMirror_blockquote]:border-blue-500
             [&_.ProseMirror_blockquote]:py-3.5
@@ -758,6 +946,9 @@ export default function RichEditor({ content, onChange }: EditorProps) {
             [&_.ProseMirror_blockquote]:my-5
             [&_.ProseMirror_blockquote]:text-zinc-650
             [&_.ProseMirror_blockquote]:dark:text-zinc-350
+ 
+            [&_.ProseMirror_.callout-box]:[line-height:var(--editor-line-height,1.6)]
+            [&_.ProseMirror_.callout-box]:[font-size:var(--responsive-font-size,16px)]
             
             [&_.ProseMirror_pre]:bg-zinc-950
             [&_.ProseMirror_pre]:text-zinc-100
