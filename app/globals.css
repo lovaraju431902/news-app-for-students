@@ -228,3 +228,30 @@
     --inline-font-scale: 0.85;
   }
 }
+
+/* Responsive Tables for ProseMirror and previews */
+.ProseMirror table,
+.article-preview-content table {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .ProseMirror table,
+  .article-preview-content table {
+    display: block !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Decrease table cell sizes, padding and font size on mobile */
+  .ProseMirror th,
+  .ProseMirror td,
+  .article-preview-content th,
+  .article-preview-content td {
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+}

@@ -549,8 +549,9 @@ export default function BlogContentRenderer({ blog, inline = false }: { blog: Bl
             [&_div[data-custom-video][data-alignment='center']]:block
             [&_div[data-custom-video][data-alignment='center']]:mx-auto
             [&_div[data-custom-video][data-alignment='center']]:clear-both
-            
-            [&_video]:rounded-xl [&_video]:border [&_video]:border-zinc-200 [&_video]:dark:border-zinc-800 [&_video]:my-6 [&_video]:shadow-md"
+            [&_video]:rounded-xl [&_video]:border [&_video]:border-zinc-200 [&_video]:dark:border-zinc-800 [&_video]:my-6 [&_video]:shadow-md
+            [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_table]:text-sm
+            [&_th]:p-3 [&_th]:text-left [&_td]:p-3 [&_td]:text-left"
         >
           {renderContentWithCodeBlocks(blog.content)}
         </div>
