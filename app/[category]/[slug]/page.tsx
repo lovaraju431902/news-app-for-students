@@ -124,7 +124,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
       <Header />
       <Navbar />
 
-      <main className="flex-grow w-full">
+      <main className="flex-grow w-full pl-3 md:pl-0">
         <div className="flex flex-col lg:flex-row gap-4 items-start">
 
           {/* Left + Middle Column Wrapper */}
@@ -150,7 +150,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
                       More Articles
                     </h2>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 mr-3 md:mr-0">
                     {moreBlogs.map((item) => {
                       const primaryTag = item.tags.find((t: any) => !t.tag.parentId)?.tag || item.tags[0]?.tag;
                       const catSlug = primaryTag?.slug || "general";
@@ -168,8 +168,8 @@ export default async function BlogDetailPage({ params }: PageProps) {
                               />
                             </Link>
                           )}
-                          <div className="p-4 flex-grow flex flex-col justify-between">
-                            <div className="space-y-2">
+                          <div className="p-3 md:p-4 flex-grow flex flex-col justify-between">
+                            <div className="space-y-2 md:space-y-3">
                               {primaryTag && (
                                 <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400">
                                   {primaryTag.name}
@@ -181,7 +181,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
                                 </Link>
                               </h3>
                             </div>
-                            <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-4 font-medium border-t border-gray-50 dark:border-zinc-850 pt-3">
+                            <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400  font-medium border-t border-gray-50 dark:border-zinc-850 pt-2 md:pt-3">
                               <CalendarDays className="w-3.5 h-3.5" />
                               <span>
                                 {new Date(item.createdAt).toLocaleDateString("en-US", {
@@ -207,7 +207,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
                       Related Articles
                     </h2>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3">
                     {relatedBlogs.map((item) => {
                       const primaryTag = item.tags.find((t: any) => !t.tag.parentId)?.tag || item.tags[0]?.tag;
                       const catSlug = primaryTag?.slug || "general";

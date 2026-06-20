@@ -187,7 +187,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
       <Header />
       <Navbar />
 
-      <main className="flex-grow w-full">
+      <main className="flex-grow pl-3 md:pl-0 w-full">
         <div className="flex flex-col md:flex-row gap-6 items-start">
 
           {/* Left Column: Categories Sidebar */}

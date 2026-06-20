@@ -149,7 +149,7 @@ export default function MostRead() {
   }
 
   return (
-    <section className=" w-full  md:pr-[70px] lg:pl-[222px]">
+    <section className=" w-full p-4  md:pr-[70px] lg:pl-[222px]">
       {/* Header */}
       <div className="flex items-center gap-1 mb-4 cursor-pointer group w-fit">
         <h2 className="text-xl font-extrabold text-gray-900 group-hover:text-red-700 transition-colors">
