@@ -10,8 +10,8 @@ import {
     Building2,
     CalendarDays,
     LayoutDashboardIcon,
-    
-    
+
+
     FileText,
     Wallet,
     TrendingUp,
@@ -83,8 +83,8 @@ const cats = [
     },
     {
         icon: Building2,
-        label: "Business",
-        href: "/business",
+        label: "AI Prompts",
+        href: "/ai-prompts",
         color: "bg-indigo-100 text-indigo-600",
     },
     {

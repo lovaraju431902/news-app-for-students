@@ -107,7 +107,7 @@ const ADMIN_MAPPING: Record<string, { name: string; image: string }> = {
     name: "Nikhil Reddy",
     image: "https://res.cloudinary.com/tryonai/image/upload/v1781353607/create_a_indian_guy_only_202606131454_mxkbx8.jpg"
   },
-  "business": {
+  "ai-prompts": {
     name: "Sai Kiran",
     image: "https://res.cloudinary.com/tryonai/image/upload/v1781353613/create_a_kannada_indian_guy_202606131454_zrxvhu.jpg"
   },
@@ -252,6 +252,39 @@ const TELEGRAM_SVG = (
   </svg>
 );
 
+
+
+const getBadgeStyle = (slug: string) => {
+  const colors: Record<string, string> = {
+    "govt-jobs": "bg-blue-600 text-white",
+    "study-tips": "bg-indigo-600 text-white",
+    "tech-news": "bg-blue-500 text-white",
+    "youtube-tips": "bg-red-600 text-white",
+    "results": "bg-emerald-600 text-white",
+    "scholarships": "bg-orange-500 text-white",
+    "exam-prep": "bg-indigo-600 text-white",
+    "part-time-income": "bg-emerald-600 text-white",
+    "share-market": "bg-blue-600 text-white",
+    "ai-prompts": "bg-indigo-600 text-white",
+    "carrer-jobs": "bg-violet-600 text-white",
+    "youtube-growth": "bg-red-600 text-white",
+    "instagram": "bg-pink-600 text-white",
+    "mobile-hacks": "bg-cyan-600 text-white",
+    "ai-tools": "bg-purple-600 text-white",
+    "marketing": "bg-amber-600 text-white",
+    "startup-ideas": "bg-orange-600 text-white",
+    "technology": "bg-teal-600 text-white",
+    "apps-websites": "bg-sky-600 text-white",
+    "facebook": "bg-blue-600 text-white",
+    "editing": "bg-rose-600 text-white",
+    "govt-jobs-updates": "bg-yellow-600 text-zinc-900",
+    "files-materials": "bg-zinc-600 text-white",
+    "internships": "bg-lime-600 text-white",
+    "current-affairs": "bg-amber-600 text-white",
+  };
+  return colors[slug] || "bg-zinc-700 text-white";
+};
+
 export default function BlogContentRenderer({ blog, inline = false }: { blog: Blog; inline?: boolean }) {
   const [imageError, setImageError] = useState(false);
   const [adminImgError, setAdminImgError] = useState(false);
@@ -371,8 +404,8 @@ export default function BlogContentRenderer({ blog, inline = false }: { blog: Bl
           <div className="mb-4">
             <Link
               href={`/${primaryTag.slug}`}
-              className="inline-block bg-[#00873d] text-white text-[11px] font-bold px-3 py-1 rounded uppercase tracking-wider hover:opacity-90 transition-opacity"
-            >
+              className={cn("inline-block   text-[11px] font-bold px-3 py-1 rounded uppercase tracking-wider hover:opacity-90 transition-opacity",
+                getBadgeStyle(primaryTag.slug))}>
               {primaryTag.name}
             </Link>
           </div>
@@ -474,13 +507,15 @@ export default function BlogContentRenderer({ blog, inline = false }: { blog: Bl
               {TELEGRAM_SVG}
             </a>
 
-            <button
-              onClick={handleInstagramShare}
+            <a
+              href={'https://www.instagram.com/reels/create/link=' + shareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               title="Share on Instagram"
               className="w-[34px] h-[34px] flex items-center justify-center hover:opacity-90 hover:scale-105 transition-all duration-200 cursor-pointer"
             >
               {INSTAGRAM_SVG}
-            </button>
+            </a>
           </div>
         </div>
 
@@ -572,12 +607,14 @@ export default function BlogContentRenderer({ blog, inline = false }: { blog: Bl
       </div>
 
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-5 right-5 bg-zinc-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 border border-zinc-800 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <span className="text-xs font-semibold">{toastMessage}</span>
-        </div>
-      )}
+      {
+        toastMessage && (
+          <div className="fixed bottom-5 right-5 bg-zinc-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 border border-zinc-800 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300">
+            <span className="text-xs font-semibold">{toastMessage}</span>
+          </div>
+        )
+      }
 
-    </article>
+    </article >
   );
 }

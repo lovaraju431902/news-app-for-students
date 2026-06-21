@@ -52,7 +52,7 @@ const getBadgeStyle = (slug: string) => {
     "exam-prep": "bg-indigo-600 text-white",
     "part-time-income": "bg-emerald-600 text-white",
     "share-market": "bg-blue-600 text-white",
-    "business": "bg-indigo-600 text-white",
+    "ai-prompts": "bg-indigo-600 text-white",
     "carrer-jobs": "bg-violet-600 text-white",
     "youtube-growth": "bg-red-600 text-white",
     "instagram": "bg-pink-600 text-white",

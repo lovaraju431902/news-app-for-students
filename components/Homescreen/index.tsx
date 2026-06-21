@@ -24,6 +24,7 @@ import {
     Globe,
     Scissors,
     Bell,
+    Terminal,
 } from "lucide-react";
 import Categoryrow from "./nextsection";
 import LatestNews from "./latestnews";
@@ -273,9 +274,9 @@ export default function Sidebar() {
             color: "bg-blue-100 text-blue-600",
         },
         {
-            icon: Building2,
-            label: "Business",
-            href: "/business",
+            icon: Terminal,
+            label: "Ai Prompts",
+            href: "/ai-prompts",
             color: "bg-indigo-100 text-indigo-600",
         },
         {

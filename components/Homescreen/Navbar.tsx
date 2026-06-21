@@ -24,6 +24,7 @@ import {
     Home,
     ChevronDown,
     Menu,
+    Terminal,
 } from "lucide-react";
 
 
@@ -101,9 +102,9 @@ export default function Navbar() {
             color: "bg-blue-100 text-blue-600",
         },
         {
-            icon: Building2,
-            label: "Business",
-            href: "/business",
+            icon: Terminal,
+            label: "Ai Prompts",
+            href: "/ai-prompts",
             color: "bg-indigo-100 text-indigo-600",
         },
         {
@@ -231,13 +232,13 @@ export default function Navbar() {
                     <SheetContent className="w-[190px]">
                         <SheetTitle className="sr-only">Categories</SheetTitle>
                         <SheetDescription className="sr-only">sdebgh</SheetDescription>
-                        <div className=" w-[190px] ">
+                        <div className="w-full">
                             <div className="">
                                 <div className="flex items-center gap-2 p-5 font-extrabold text-sm mb-3 text-gray-900 pb-2 border-b border-gray-100">
                                     <LayoutDashboardIcon className="w-4 h-4 text-primary" />
                                     <span>Categories</span>
                                 </div>
-                                <ul className="max-h-full  overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full">
+                                <ul className="max-h-[calc(100vh-120px)] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-gray-100">
                                     {cats.map((c) => (
                                         <li key={c.label}>
                                             <Link

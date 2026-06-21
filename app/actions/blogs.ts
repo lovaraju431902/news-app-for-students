@@ -123,7 +123,7 @@ export async function searchBlogsAction(
 ) {
   try {
     const cacheKey = `blogs:tags:${(tagIds || []).join(",")}:q:${(searchQuery || "").trim().toLowerCase()}:p:${page || "all"}:l:${limit || "all"}`;
-    
+
     if (redis.isConfigured) {
       try {
         const cached = await redis.get<{ blogs: any[]; totalCount: number }>(cacheKey);
@@ -429,7 +429,7 @@ export async function seedMainCategoriesAction() {
   const mainCategories = [
     { name: "Part Time Income", slug: "part-time-income" },
     { name: "Share Market", slug: "share-market" },
-    { name: "Business", slug: "business" },
+    { name: "AI Prompts", slug: "ai-prompts" },
     { name: "Carrer Jobs", slug: "carrer-jobs" },
     { name: "Youtube Growth", slug: "youtube-growth" },
     { name: "Instagram", slug: "instagram" },

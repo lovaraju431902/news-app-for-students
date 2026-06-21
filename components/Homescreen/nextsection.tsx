@@ -25,6 +25,7 @@ import {
     Home,
     ChevronDown,
     Menu,
+    Terminal,
 } from "lucide-react";
 
 
@@ -84,9 +85,9 @@ const items = [
         color: "bg-blue-100 text-blue-600",
     },
     {
-        icon: Building2,
-        label: "Business",
-        href: "/business",
+        icon: Terminal,
+        label: "AI Prompts",
+        href: "/ai-prompts",
         color: "bg-indigo-100 text-indigo-600",
     },
     {

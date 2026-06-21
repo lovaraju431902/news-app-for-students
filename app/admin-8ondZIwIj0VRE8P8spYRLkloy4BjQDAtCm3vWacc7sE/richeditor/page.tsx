@@ -44,7 +44,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 const MAIN_CATEGORY_SLUGS = [
   "part-time-income",
   "share-market",
-  "business",
+  "ai-prompts",
   "carrer-jobs",
   "youtube-growth",
   "instagram",
@@ -231,15 +231,15 @@ function RichEditorPageContent() {
 
   const handleAutoGenerateKeywords = () => {
     const keywordsSet = new Set<string>();
-    
+
     if (title.trim()) {
       const cleanTitle = title.replace(/[^\w\s-]/g, "").toLowerCase();
       keywordsSet.add(cleanTitle.trim());
-      
+
       const words = cleanTitle.split(/\s+/).filter(w => w.length > 3);
       words.forEach(w => keywordsSet.add(w));
     }
-    
+
     if (mainCategoryId) {
       const cat = dbTags.find(t => t.id === mainCategoryId);
       if (cat) {
@@ -933,11 +933,10 @@ function RichEditorPageContent() {
             <button
               type="button"
               onClick={() => setShowStyleControls(!showStyleControls)}
-              className={`p-2 border rounded-lg transition-colors flex items-center justify-center ${
-                showStyleControls
+              className={`p-2 border rounded-lg transition-colors flex items-center justify-center ${showStyleControls
                   ? "bg-blue-500/10 border-blue-500/30 text-blue-500"
                   : "bg-zinc-100 dark:bg-zinc-900 border-zinc-200/50 dark:border-zinc-800/50 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
-              }`}
+                }`}
               title="Toggle Typography Adjustment Panel"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -1091,9 +1090,9 @@ function RichEditorPageContent() {
                   Rich Text Workspace
                 </span>
               </div>
-              <RichEditor 
-                content={content} 
-                onChange={setContent} 
+              <RichEditor
+                content={content}
+                onChange={setContent}
                 fontSize={fontSize}
                 lineHeight={lineHeight}
               />
