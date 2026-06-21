@@ -2,34 +2,38 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyJWT } from "./lib/session";
 
+const ADMIN_PATH_PREFIX = "/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE";
+const LOGIN_PATH = `${ADMIN_PATH_PREFIX}/login`;
+const COOKIE_NAME = "admin_session";
+const ALLOWED_EMAILS = ["lovarajuk431902@gmail.com", "satoshi.nakamoto807@gmail.com"];
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const sessionToken = request.cookies.get(COOKIE_NAME)?.value;
 
-  // 1. Protect / routes (except //login)
-  if (pathname.startsWith("/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE") && pathname !== "/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE/login") {
-    const sessionCookie = request.cookies.get("admin_session")?.value;
-
-    if (!sessionCookie) {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+  // 1. Redirect logged-in admin users away from the login page
+  if (pathname === LOGIN_PATH) {
+    if (sessionToken) {
+      const session = await verifyJWT(sessionToken);
+      if (session && ALLOWED_EMAILS.includes(session.email?.toLowerCase())) {
+        return NextResponse.redirect(new URL(ADMIN_PATH_PREFIX, request.url));
+      }
     }
-
-    const session = await verifyJWT(sessionCookie);
-    if (!session) {
-      // Clear invalid cookie and redirect to login
-      const response = NextResponse.redirect(new URL("/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE/login", request.url));
-      response.cookies.delete("admin_session");
-      return response;
-    }
+    return NextResponse.next();
   }
 
-  // 2. Redirect logged-in admin users away from the login page
-  if (pathname === "/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE/login") {
-    const sessionCookie = request.cookies.get("admin_session")?.value;
-    if (sessionCookie) {
-      const session = await verifyJWT(sessionCookie);
-      if (session) {
-        return NextResponse.redirect(new URL("/admin", request.url));
-      }
+  // 2. Protect admin route and subroutes
+  if (pathname.startsWith(ADMIN_PATH_PREFIX)) {
+    if (!sessionToken) {
+      return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+    }
+
+    const session = await verifyJWT(sessionToken);
+    if (!session || !ALLOWED_EMAILS.includes(session.email?.toLowerCase())) {
+      // Clear cookie and redirect to login
+      const response = NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+      response.cookies.delete(COOKIE_NAME);
+      return response;
     }
   }
 
@@ -37,5 +41,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE/:path*"],
+  matcher: [
+    "/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE",
+    "/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE/:path*",
+  ],
 };

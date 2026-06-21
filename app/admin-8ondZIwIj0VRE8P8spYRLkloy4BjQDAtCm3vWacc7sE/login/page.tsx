@@ -89,7 +89,7 @@ export default function AdminLoginPage() {
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="lovarajuk431902@gmail.com"
+                  placeholder="Enter your admin email"
                   required
                   disabled={isPending || state?.success}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-zinc-950/50 border border-zinc-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 disabled:opacity-50"

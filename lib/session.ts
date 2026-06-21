@@ -1,5 +1,3 @@
-import { cookies } from "next/headers";
-
 const encoder = new TextEncoder();
 const SESSION_SECRET = process.env.SESSION_SECRET || "default_fallback_session_secret_string_32_chars_long_minimum_for_security";
 const COOKIE_NAME = "admin_session";
@@ -90,6 +88,7 @@ export async function createSession(email: string) {
   const expiresAt = Date.now() + duration;
   const sessionToken = await signJWT({ email, expiresAt });
   
+  const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, sessionToken, {
     httpOnly: true,
@@ -101,6 +100,7 @@ export async function createSession(email: string) {
 }
 
 export async function getSession(): Promise<{ email: string } | null> {
+  const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get(COOKIE_NAME)?.value;
   if (!sessionCookie) return null;
@@ -109,6 +109,7 @@ export async function getSession(): Promise<{ email: string } | null> {
 }
 
 export async function deleteSession() {
+  const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
   cookieStore.delete(COOKIE_NAME);
 }

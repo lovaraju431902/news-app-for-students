@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { searchBlogs } from "@/lib/search-service";
 import { revalidatePath } from "next/cache";
 import { redis } from "@/lib/redis";
+import { getSession } from "@/lib/session";
 
 export async function getTagsAction() {
   try {
@@ -22,6 +23,11 @@ export async function getTagsAction() {
 }
 
 export async function createTagAction(name: string, parentId?: string | null) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "Unauthorized access." };
+  }
+
   const trimmedName = name.trim();
   if (!trimmedName) {
     return { success: false, error: "Tag name cannot be empty." };
@@ -66,6 +72,11 @@ export async function createBlogAction(data: {
   tagIds: string[];
   seoKeywords?: string;
 }) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "Unauthorized access." };
+  }
+
   try {
     const trimmedTitle = data.title.trim();
     const trimmedSlug = data.slug.trim()
@@ -291,6 +302,11 @@ export async function getBlogByIdAction(id: string) {
 }
 
 export async function deleteBlogAction(id: string) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "Unauthorized access." };
+  }
+
   try {
     const blog = await prisma.blog.findUnique({
       where: { id },
@@ -330,6 +346,11 @@ export async function updateBlogAction(
     seoKeywords?: string;
   }
 ) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "Unauthorized access." };
+  }
+
   try {
     const trimmedTitle = data.title.trim();
     const trimmedSlug = data.slug.trim()
@@ -406,6 +427,11 @@ export async function updateBlogAction(
 }
 
 export async function getAdminBlogsAction() {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "Unauthorized access." };
+  }
+
   try {
     const blogs = await prisma.blog.findMany({
       include: {
