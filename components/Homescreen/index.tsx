@@ -195,7 +195,7 @@ export default function Sidebar() {
     useEffect(() => {
         if (data) {
 
-            console.log("1 st data", data.data)
+            // console.log("1 st data", data.data)
 
         }
     }, [data?.data]);
@@ -218,7 +218,7 @@ export default function Sidebar() {
     useEffect(() => {
         if (RightCarddata) {
 
-            console.log("1 st data", RightCarddata.data)
+            // console.log("1 st data", RightCarddata.data)
 
         }
     }, [RightCarddata?.data]);

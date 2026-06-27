@@ -147,7 +147,6 @@ export default function WebStoriesAndVideos() {
   useEffect(() => {
     if (Webstoriesdata) {
 
-      console.log("1 st data", Webstoriesdata.data)
 
     }
   }, [Webstoriesdata?.data]);

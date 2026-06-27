@@ -186,7 +186,7 @@ export default function RightRail() {
     useEffect(() => {
         if (data1) {
 
-            console.log("1 st data", data1.data)
+            // console.log("1 st data", data1.data)
 
         }
     }, [data1?.data]);
@@ -226,7 +226,7 @@ export default function RightRail() {
     useEffect(() => {
         if (data2) {
 
-            console.log("1 st data", data2.data)
+            // console.log("1 st data", data2.data)
 
         }
     }, [data2?.data]);
@@ -261,7 +261,7 @@ export default function RightRail() {
     useEffect(() => {
         if (data3) {
 
-            console.log("1 st data", data3.data)
+            // console.log("1 st data", data3.data)
 
         }
     }, [data3?.data]);
@@ -298,7 +298,7 @@ export default function RightRail() {
     useEffect(() => {
         if (data4) {
 
-            console.log("1 st data", data4.data)
+            // console.log("1 st data", data4.data)
 
         }
     }, [data4?.data]);
