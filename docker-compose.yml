@@ -1,0 +1,129 @@
+networks:
+  news_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: news_postgres_data
+  redis_data:
+    name: news_redis_data
+  meilisearch_data:
+    name: news_meilisearch_data
+
+services:
+  # Database Service
+  postgres:
+    image: postgres:16-alpine
+    container_name: news_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password}
+      POSTGRES_DB: ${POSTGRES_DB:-news_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+      TZ: UTC
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - news_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache Service
+  redis:
+    image: redis:7-alpine
+    container_name: news_redis
+    restart: unless-stopped
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD:-redis_password}
+    environment:
+      TZ: UTC
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - news_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_password}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Meilisearch Service
+  meilisearch:
+    image: getmeili/meilisearch:v1.8
+    container_name: news_meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_HOST: 0.0.0.0:7700
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-meili_master_key_must_be_long_and_secure}
+      TZ: UTC
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - news_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7700/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js Application Service
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: news_nextjs
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/${POSTGRES_DB:-news_db}?schema=public
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_password}@redis:6379
+      MEILI_URL: http://meilisearch:7700
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-meili_master_key_must_be_long_and_secure}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SESSION_SECRET: ${SESSION_SECRET}
+      NODE_ENV: production
+      PORT: 3000
+    networks:
+      - news_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy Service
+  nginx:
+    image: nginxinc/nginx-unprivileged:alpine
+    container_name: news_nginx
+    restart: unless-stopped
+    ports:
+      - "80:8080"
+      - "443:8443"
+    depends_on:
+      - nextjs
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - news_network
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3

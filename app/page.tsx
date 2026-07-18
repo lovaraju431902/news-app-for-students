@@ -2,17 +2,21 @@ import MainPage from "@/components/MainPage";
 import { prisma } from "@/lib/prisma";
 
 export default async function Home() {
-  const slides = await prisma.slideData.findMany({
-    where: {
-      isActive: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: 1,
-  });
-
-  const firstSlide = slides[0];
+  let firstSlide = null;
+  try {
+    const slides = await prisma.slideData.findMany({
+      where: {
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 1,
+    });
+    firstSlide = slides[0];
+  } catch (error) {
+    console.error("Failed to query slides at build-time:", error);
+  }
 
   return (
     <>
