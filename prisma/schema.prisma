@@ -214,3 +214,29 @@ model YouMayLike {
 
   @@index([isActive, createdAt(sort: Desc)])
 }
+
+model AiPrompt {
+  id        String   @id @default(cuid())
+  title     String
+  image     String
+  prompt    String   @db.Text
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
+}
+
+model MaterialFile {
+  id        String   @id @default(cuid())
+  title     String
+  fileUrl   String
+  fileSize  String
+  fileType  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt(sort: Desc)])
+}
+

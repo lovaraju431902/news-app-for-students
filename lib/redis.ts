@@ -1,72 +1,59 @@
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+import Redis from "ioredis";
 
-const isConfigured = !!(redisUrl && redisToken);
+const redisUrl = process.env.REDIS_URL;
+const isConfigured = !!redisUrl;
+
+let client: Redis | null = null;
+if (isConfigured) {
+  try {
+    client = new Redis(redisUrl!);
+  } catch (err) {
+    console.error("Redis client initialization error:", err);
+  }
+}
 
 export const redis = {
   isConfigured,
 
   async get<T>(key: string): Promise<T | null> {
-    if (!isConfigured) return null;
+    if (!client) return null;
     try {
-      const res = await fetch(`${redisUrl}/get/${encodeURIComponent(key)}`, {
-        headers: {
-          Authorization: `Bearer ${redisToken}`,
-        },
-        cache: "no-store",
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.result === null || data.result === undefined) return null;
-      
+      const data = await client.get(key);
+      if (data === null || data === undefined) return null;
       try {
-        return JSON.parse(data.result);
+        return JSON.parse(data);
       } catch {
-        return data.result as unknown as T;
+        return data as unknown as T;
       }
     } catch (err) {
-      console.error("Redis REST GET error:", err);
+      console.error("Redis GET error:", err);
       return null;
     }
   },
 
   async set(key: string, value: any, options?: { ex?: number }): Promise<boolean> {
-    if (!isConfigured) return false;
+    if (!client) return false;
     try {
       const stringVal = typeof value === "string" ? value : JSON.stringify(value);
-      const command = ["SET", key, stringVal];
       if (options?.ex) {
-        command.push("EX", String(options.ex));
+        await client.set(key, stringVal, "EX", options.ex);
+      } else {
+        await client.set(key, stringVal);
       }
-
-      const res = await fetch(redisUrl!, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${redisToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(command),
-        cache: "no-store",
-      });
-      return res.ok;
+      return true;
     } catch (err) {
-      console.error("Redis REST SET error:", err);
+      console.error("Redis SET error:", err);
       return false;
     }
   },
 
   async del(key: string): Promise<boolean> {
-    if (!isConfigured) return false;
+    if (!client) return false;
     try {
-      const res = await fetch(`${redisUrl}/del/${encodeURIComponent(key)}`, {
-        headers: {
-          Authorization: `Bearer ${redisToken}`,
-        },
-        cache: "no-store",
-      });
-      return res.ok;
+      await client.del(key);
+      return true;
     } catch (err) {
-      console.error("Redis REST DEL error:", err);
+      console.error("Redis DEL error:", err);
       return false;
     }
   }
