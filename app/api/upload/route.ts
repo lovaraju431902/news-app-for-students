@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
 import path from "path";
+import sharp from "sharp";
 
 // Check if cloud S3/R2 variables are configured
 const s3Enabled = !!(
@@ -36,15 +37,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    let buffer: any = Buffer.from(await file.arrayBuffer());
     const originalName = file.name;
     const extension = path.extname(originalName);
     const baseName = path.basename(originalName, extension)
       .replace(/[^a-zA-Z0-9]/g, "-") // sanitize filename
       .toLowerCase();
-    
+
     // Generate a unique filename using timestamp and random string
-    const uniqueFilename = `${baseName}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}${extension}`;
+    let uniqueFilename = `${baseName}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}${extension}`;
+    let contentType = file.type;
+
+    // Convert standard images to WebP format (excluding SVG & GIF animations)
+    if (file.type.startsWith("image/") && !file.type.includes("webp") && !file.type.includes("gif") && !file.type.includes("svg+xml")) {
+      try {
+        buffer = await sharp(buffer)
+          .webp({ quality: 80 })
+          .toBuffer();
+        uniqueFilename = `${baseName}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.webp`;
+        contentType = "image/webp";
+      } catch (err) {
+        console.error("Failed to convert image to WebP:", err);
+      }
+    }
 
     if (s3Enabled && s3Client) {
       // Upload to Cloudflare R2 / S3 Storage
@@ -56,7 +71,7 @@ export async function POST(request: Request) {
           Bucket: bucketName,
           Key: uniqueFilename,
           Body: buffer,
-          ContentType: file.type,
+          ContentType: contentType,
         })
       );
 
@@ -65,7 +80,7 @@ export async function POST(request: Request) {
     } else {
       // Local fallback: write to public/uploads/
       const uploadDir = path.join(process.cwd(), "public", "uploads");
-      
+
       // Ensure directory exists
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });

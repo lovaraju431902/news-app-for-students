@@ -65,12 +65,9 @@ export default function AIPromptsView({ categoryTag }: AIPromptsViewProps) {
       if (!res.ok) throw new Error("Failed to load prompts");
       return res.json();
     },
-    getNextPageParam: (lastPage, allPages) => {
-      const totalLoaded = allPages.length * LIMIT;
-      return totalLoaded < lastPage.totalCount ? allPages.length + 1 : undefined;
-    },
+    getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
     initialPageParam: 1,
-    refetchInterval: 3000, // Poll every 4 seconds for real-time updates
+    refetchInterval: 3000,
   });
 
   // Flatten paginated results
@@ -120,12 +117,7 @@ export default function AIPromptsView({ categoryTag }: AIPromptsViewProps) {
 
       {/* Masonry Layout Container */}
       {isLoading ? (
-        <div className="py-32 flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-9 h-9 animate-spin text-blue-500" />
-          <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-450 animate-pulse">
-            Loading prompt canvas...
-          </p>
-        </div>
+        <PromptSkeleton />
       ) : prompts.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-16 border border-dashed border-zinc-200 dark:border-zinc-850 rounded-3xl bg-zinc-50/20 dark:bg-zinc-900/10 text-center">
           <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 grid place-items-center mb-4 text-zinc-400">
@@ -298,4 +290,21 @@ export default function AIPromptsView({ categoryTag }: AIPromptsViewProps) {
     </div>
   );
 }
+
+const PromptSkeleton = () => {
+  const heights = ["h-64", "h-80", "h-52", "h-72", "h-60", "h-80", "h-56", "h-72", "h-64", "h-52"];
+  return (
+    <div className="columns-2 sm:columns-3 md:columns-4 xl:columns-5 gap-5 space-y-5 animate-pulse">
+      {heights.map((h, i) => (
+        <div
+          key={i}
+          className="break-inside-avoid w-full rounded-2xl border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-900 p-2 space-y-3"
+        >
+          <div className={cn("w-full rounded-xl bg-zinc-200 dark:bg-zinc-800/80", h)} />
+          <div className="h-4 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800/60 mx-1" />
+        </div>
+      ))}
+    </div>
+  );
+};
 

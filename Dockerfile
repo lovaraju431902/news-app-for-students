@@ -45,7 +45,7 @@ RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --create-home --home-dir /home/nextjs nextjs
 
 # Copy essential files for runtime
-COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
 
@@ -56,8 +56,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Set permission for Next.js build-time prerender cache
-RUN mkdir -p .next && chown -R nextjs:nodejs .next
+# Set permission for Next.js build-time prerender cache and local uploads fallback
+RUN mkdir -p .next public/uploads && chown -R nextjs:nodejs .next public/uploads
 
 # Switch to non-root user
 USER nextjs
