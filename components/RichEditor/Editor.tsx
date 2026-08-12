@@ -12,7 +12,8 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
 import { Highlight } from "@tiptap/extension-highlight";
 import { CustomImage } from "./CustomImage";
-import { CustomVideo } from "./CustomVideo";
+import { CustomVideo, getEmbedUrl } from "./CustomVideo";
+import { MediaPicker } from "@/components/ui/media-picker";
 import { Node, mergeAttributes } from "@tiptap/core";
 import {
   Bold,
@@ -212,6 +213,7 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
   const [videoUrl, setVideoUrl] = useState("");
   const [videoThumbnail, setVideoThumbnail] = useState("");
   const [videoType, setVideoType] = useState<"long" | "shorts">("long");
+  const [videoSourceTab, setVideoSourceTab] = useState<"youtube" | "upload">("youtube");
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
 
   // Table Builder states
@@ -1002,10 +1004,11 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
               setVideoUrl("");
               setVideoThumbnail("");
               setVideoType("long");
+              setVideoSourceTab("youtube");
               setIsVideoModalOpen(true);
             }}
             className="p-1.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700/60 transition-colors text-zinc-700 dark:text-zinc-300"
-            title="Insert Video Link"
+            title="Insert Video (YouTube, Vimeo or WebM)"
           >
             <Film className="w-4 h-4" />
           </button>
@@ -1225,46 +1228,41 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
         <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
           <form
             onSubmit={saveImage}
-            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl p-6 w-full max-w-md animate-in fade-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl p-6 w-full max-w-md animate-in fade-in zoom-in-95 duration-200 space-y-4"
           >
-            <div className="flex items-center gap-2 mb-4 text-blue-500">
+            <div className="flex items-center gap-2 mb-2 text-blue-500">
               <ImageIcon className="w-5 h-5" />
               <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
-                Insert Image by Link
+                Insert Image (.WebP)
               </h3>
             </div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
-              TipTap only loads remote image links for this editor. Paste your image source link below.
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Upload local image (auto-converted to .WebP) or select from your Cloudflare Media Library.
             </p>
-            <div className="space-y-4 mb-5">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-1">
-                  Image Source URL *
-                </label>
-                <input
-                  type="url"
-                  required
-                  placeholder="https://images.unsplash.com/photo-..."
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  autoFocus
-                />
-              </div>
+            <div className="space-y-4">
+              <MediaPicker
+                label="Select or Upload Image"
+                type="image"
+                value={imageUrl}
+                onChange={(url) => setImageUrl(url)}
+                placeholder="Click or drag image file (.webp, .png, .jpg)"
+                helperText="Images are automatically converted to .WebP for fast and lazy loading."
+              />
+
               <div>
                 <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-1">
                   Alternative Text (Alt text)
                 </label>
                 <input
                   type="text"
-                  placeholder="Describe the image..."
+                  placeholder="Describe the image for SEO..."
                   value={imageAlt}
                   onChange={(e) => setImageAlt(e.target.value)}
                   className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 text-sm">
+            <div className="flex justify-end gap-2 text-sm pt-2 border-t border-zinc-100 dark:border-zinc-800">
               <button
                 type="button"
                 onClick={() => setIsImageModalOpen(false)}
@@ -1274,7 +1272,8 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-semibold"
+                disabled={!imageUrl}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-semibold disabled:opacity-50"
               >
                 Insert Image
               </button>
@@ -1283,7 +1282,7 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
         </div>
       )}
 
-      {/* PREMIUM VIDEO DIALOG OVERLAY */}
+      {/* PREMIUM VIDEO DIALOG OVERLAY (YOUTUBE + FILE UPLOAD) */}
       {isVideoModalOpen && (
         <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
           <form
@@ -1300,85 +1299,156 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
               setVideoUrl("");
               setVideoThumbnail("");
             }}
-            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl p-6 w-full max-w-md animate-in fade-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg animate-in fade-in zoom-in-95 duration-200 space-y-4 max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-center gap-2 mb-4 text-blue-500">
-              <Film className="w-5 h-5" />
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
-                Insert Video Clip
-              </h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-red-500">
+                <Film className="w-5 h-5" />
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
+                  Insert Video Player
+                </h3>
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full border border-red-200 dark:border-red-900/40">
+                YouTube & Direct
+              </span>
             </div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
-              Embed video streams (MP4/WebM files) with customizable dimensions and custom cover thumbnails.
+
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Embed YouTube videos, Shorts, Vimeo, or upload high-performance .WebM / MP4 video files.
             </p>
-            <div className="space-y-4 mb-5">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-1">
-                  Video Stream URL *
-                </label>
-                <input
-                  type="url"
-                  required
-                  placeholder="https://example.com/movie.mp4"
+
+            {/* Tab Selector: YouTube vs Upload */}
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setVideoSourceTab("youtube")}
+                className={`py-2 px-3 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  videoSourceTab === "youtube"
+                    ? "bg-white dark:bg-zinc-900 text-red-600 dark:text-red-400 shadow-sm"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-red-500" />
+                <span>YouTube / Link</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVideoSourceTab("upload")}
+                className={`py-2 px-3 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  videoSourceTab === "upload"
+                    ? "bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-sm"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                <span>Upload Video (.WebM)</span>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Tab 1: YouTube URL Input */}
+              {videoSourceTab === "youtube" ? (
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                    YouTube or Vimeo Video Link
+                  </label>
+                  <input
+                    type="url"
+                    value={videoUrl}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setVideoUrl(val);
+                      const embedInfo = getEmbedUrl(val);
+                      if (embedInfo.isShorts) {
+                        setVideoType("shorts");
+                      }
+                    }}
+                    placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/... or https://youtube.com/shorts/..."
+                    className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition-all"
+                    autoFocus
+                  />
+                  <p className="text-[11px] text-zinc-400">
+                    Supports standard YouTube watch links, YouTube Shorts, youtu.be, live streams, and Vimeo.
+                  </p>
+
+                  {/* YouTube Live Embed Preview */}
+                  {videoUrl && getEmbedUrl(videoUrl).type === "embed" && (
+                    <div className="mt-2 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-black aspect-video relative max-h-48 flex items-center justify-center shadow-inner">
+                      <iframe
+                        src={getEmbedUrl(videoUrl).url}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Tab 2: Upload Video File */
+                <MediaPicker
+                  label="Video File (.WebM Stream / MP4)"
+                  type="video"
                   value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  autoFocus
+                  onChange={(url) => setVideoUrl(url)}
+                  placeholder="Click or drag .webm or .mp4 video file"
+                  helperText="Videos stream smoothly and lazy-load without blocking page rendering."
                 />
-              </div>
+              )}
 
-              <div>
-                <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-1">
-                  Cover Thumbnail URL (Poster)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://example.com/poster.jpg"
-                  value={videoThumbnail}
-                  onChange={(e) => setVideoThumbnail(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-              </div>
+              {/* Optional Custom Cover Poster */}
+              <MediaPicker
+                label="Custom Cover Poster / Thumbnail (.WebP)"
+                type="image"
+                value={videoThumbnail}
+                onChange={(url) => setVideoThumbnail(url)}
+                placeholder="Optional: Select or upload video cover poster"
+                helperText="Custom .WebP poster displayed before video playback."
+              />
 
+              {/* Video Player Layout Ratio */}
               <div>
-                <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-1">
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
                   Video Player Layout Ratio
                 </label>
-                <div className="grid grid-cols-2 gap-2 mt-1.5">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setVideoType("long")}
-                    className={`py-2 px-3 text-xs font-semibold border rounded-lg transition-all ${videoType === "long"
-                        ? "border-blue-500 text-blue-500 bg-blue-50 dark:bg-blue-950/45"
-                        : "border-zinc-200 dark:border-zinc-800 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900"
-                      }`}
+                    className={`py-2 px-3 text-xs font-semibold border rounded-xl transition-all cursor-pointer ${
+                      videoType === "long"
+                        ? "border-red-500 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 shadow-xs"
+                        : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                    }`}
                   >
                     Landscape (16:9 Video)
                   </button>
                   <button
                     type="button"
                     onClick={() => setVideoType("shorts")}
-                    className={`py-2 px-3 text-xs font-semibold border rounded-lg transition-all ${videoType === "shorts"
-                        ? "border-blue-500 text-blue-500 bg-blue-50 dark:bg-blue-950/45"
-                        : "border-zinc-200 dark:border-zinc-800 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900"
-                      }`}
+                    className={`py-2 px-3 text-xs font-semibold border rounded-xl transition-all cursor-pointer ${
+                      videoType === "shorts"
+                        ? "border-red-500 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 shadow-xs"
+                        : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                    }`}
                   >
                     Portrait (9:16 Shorts)
                   </button>
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-2 text-sm">
+
+            <div className="flex justify-end gap-2 text-sm pt-3 border-t border-zinc-100 dark:border-zinc-800">
               <button
                 type="button"
                 onClick={() => setIsVideoModalOpen(false)}
-                className="px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg transition-colors"
+                className="px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-xl transition-colors font-medium cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-semibold"
+                disabled={!videoUrl}
+                className="px-5 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl transition-all font-bold disabled:opacity-50 disabled:pointer-events-none shadow-md shadow-red-500/20 cursor-pointer"
               >
                 Insert Video
               </button>

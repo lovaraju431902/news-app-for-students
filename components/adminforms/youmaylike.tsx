@@ -15,11 +15,12 @@ import {
     CardTitle,
 } from "../ui/card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MediaPicker } from "@/components/ui/media-picker";
 
 export const YouMayLikeSchema = z.object({
     headline: z.string().min(3, "Headline is required"),
     description: z.string().min(3, "Description is required"),
-    image: z.string().url("Enter a valid image URL"),
+    image: z.string().min(1, "Image is required"),
     href: z.string().min(1, "Link is required"),
     isActive: z.boolean(),
 });
@@ -28,6 +29,8 @@ export type YouMayLikeFormValues = z.infer<typeof YouMayLikeSchema>;
 
 export default function YouMayLikeForm() {
     const queryClient = useQueryClient();
+    const [loading, setLoading] = useState(false);
+
     const {
         register,
         handleSubmit,
@@ -65,7 +68,7 @@ export default function YouMayLikeForm() {
 
     const mutation = useMutation({
         mutationFn: createYouMayLike,
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries();
             alert("You May Like item created successfully");
         },
@@ -82,82 +85,105 @@ export default function YouMayLikeForm() {
     return (
         <Card className="max-w-3xl">
             <CardHeader>
-                <CardTitle>Create Sponsored Link (You May Like)</CardTitle>
+                <CardTitle>Create You May Like Item</CardTitle>
             </CardHeader>
+
             <CardContent>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <form
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="space-y-6"
+                >
                     {/* Headline */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Headline</label>
+                        <label className="text-sm font-medium">
+                            Headline
+                        </label>
                         <Input
-                            placeholder="Option Trading Mastery: Learn गोपाल Sir's Strategy"
+                            placeholder="Recommendation Headline"
                             {...register("headline")}
                         />
                         {errors.headline && (
-                            <p className="text-sm text-red-500">{errors.headline.message}</p>
+                            <p className="text-sm text-red-500">
+                                {errors.headline.message}
+                            </p>
                         )}
                     </div>
 
                     {/* Description */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Description</label>
+                        <label className="text-sm font-medium">
+                            Description
+                        </label>
                         <Input
-                            placeholder="Master the Art of Option Trading with Gopal Sir's strategy for free!"
+                            placeholder="Short description or tagline"
                             {...register("description")}
                         />
                         {errors.description && (
-                            <p className="text-sm text-red-500">{errors.description.message}</p>
+                            <p className="text-sm text-red-500">
+                                {errors.description.message}
+                            </p>
                         )}
                     </div>
 
-                    {/* Image URL */}
+                    {/* Image Picker */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Image URL</label>
-                        <Input
-                            placeholder="https://example.com/ad-image.jpg"
-                            {...register("image")}
+                        <MediaPicker
+                            label="IMAGE (.WEBP)"
+                            type="image"
+                            value={watch("image")}
+                            onChange={(url) => setValue("image", url, { shouldValidate: true })}
+                            placeholder="Click or drag image (Auto-converted to .WebP)"
+                            helperText="Images are automatically converted to .WebP."
                         />
                         {errors.image && (
-                            <p className="text-sm text-red-550">{errors.image.message}</p>
+                            <p className="text-sm text-red-500">
+                                {errors.image.message}
+                            </p>
                         )}
                     </div>
-
-
 
                     {/* Link */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Destination URL / Link</label>
+                        <label className="text-sm font-medium">
+                            Link
+                        </label>
                         <Input
-                            placeholder="https://example.com/landing-page"
+                            placeholder="/sponsored/link"
                             {...register("href")}
                         />
                         {errors.href && (
-                            <p className="text-sm text-red-500">{errors.href.message}</p>
+                            <p className="text-sm text-red-500">
+                                {errors.href.message}
+                            </p>
                         )}
                     </div>
 
                     {/* Active Switch */}
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div>
-                            <p className="font-medium">Active Sponsored Link</p>
+                            <p className="font-medium">
+                                Active Item
+                            </p>
                             <p className="text-sm text-muted-foreground">
-                                Show this sponsored link on homepage
+                                Show this item in You May Like on homepage
                             </p>
                         </div>
+
                         <Switch
                             checked={isActive}
-                            onCheckedChange={(checked: boolean) =>
-                                setValue("isActive", checked)
+                            onCheckedChange={(val) =>
+                                setValue("isActive", val)
                             }
                         />
                     </div>
 
+                    {/* Submit Button */}
                     <Button
                         type="submit"
                         disabled={mutation.isPending}
                         className="w-full"
                     >
-                        {mutation.isPending ? "Creating Sponsored Link..." : "Create Sponsored Link"}
+                        {mutation.isPending ? "Creating..." : "Create You May Like Item"}
                     </Button>
                 </form>
             </CardContent>

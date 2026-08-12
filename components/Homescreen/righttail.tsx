@@ -1,10 +1,19 @@
-"use client"
+"use client";
 
-import { govtJobs, studyImg } from "@/utils/images";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, CalendarDays, ChevronRight, FileText, Flame, Mail, Send, TrendingUp } from "lucide-react";
-import { useEffect } from "react";
+import {
+    BookOpen,
+    CalendarDays,
+    ChevronRight,
+    FileText,
+    Flame,
+    Mail,
+    Send,
+    TrendingUp
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 
 
@@ -24,33 +33,17 @@ type TrendingNewsResponse = {
 };
 
 
-type StudyMaterial = {
+type MaterialItem = {
     id: string;
     title: string;
-    href: string;
-    isActive: boolean;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
-
-type StudyMaterialResponse = {
-    data: StudyMaterial[];
+    fileUrl: string;
+    fileSize: string;
+    fileType: string;
+    createdAt?: Date | string;
 };
 
 
-type PopularTopics = {
-    id: string;
-    topic: String;
-    labelColor: String
-    href: string;
-    isActive: boolean;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
 
-type PopularTopicsResponse = {
-    data: PopularTopics[];
-};
 
 
 
@@ -144,19 +137,103 @@ type TechnologyNewsResponse = {
 //         id: 8,
 //         image: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?q=80&w=200&auto=format&fit=crop",
 //         title: "ప్రపంచ సైకిల్ దినోత్సవం 2026..",
-//     },
-//     {
-//         id: 9,
-//         image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=200&auto=format&fit=crop",
-//         title: "షుగర్ వల్ల జుట్టు రాలుతుందా?",
-//     },
-//     {
-//         id: 10,
-//         image: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?q=80&w=200&auto=format&fit=crop",
-//         title: "ప్రపంచ సైకిల్ దినోత్సవం 2026..",
-//     },
-
-// ];
+const cats = [
+    {
+        label: "Part Time Income",
+        href: "/part-time-income",
+        color: "bg-emerald-100 text-emerald-600",
+    },
+    {
+        label: "Share Market",
+        href: "/share-market",
+        color: "bg-blue-100 text-blue-600",
+    },
+    {
+        label: "AI Prompts",
+        href: "/ai-prompts",
+        color: "bg-indigo-100 text-indigo-600",
+    },
+    {
+        label: "Carrer Jobs",
+        href: "/carrer-jobs",
+        color: "bg-violet-100 text-violet-600",
+    },
+    {
+        label: "Youtube Growth",
+        href: "/youtube-growth",
+        color: "bg-red-100 text-red-600",
+    },
+    {
+        label: "Instagram",
+        href: "/instagram",
+        color: "bg-pink-100 text-pink-600",
+    },
+    {
+        label: "Mobile Hacks",
+        href: "/mobile-hacks",
+        color: "bg-cyan-100 text-cyan-600",
+    },
+    {
+        label: "AI Tools",
+        href: "/ai-tools",
+        color: "bg-purple-100 text-purple-600",
+    },
+    {
+        label: "Marketing",
+        href: "/marketing",
+        color: "bg-amber-100 text-amber-600",
+    },
+    {
+        label: "Startup Ideas",
+        href: "/startup-ideas",
+        color: "bg-orange-100 text-orange-600",
+    },
+    {
+        label: "Technology",
+        href: "/technology",
+        color: "bg-teal-100 text-teal-600",
+    },
+    {
+        label: "Apps & Websites",
+        href: "/apps-websites",
+        color: "bg-sky-100 text-sky-600",
+    },
+    {
+        label: "Facebook",
+        href: "/facebook",
+        color: "bg-blue-100 text-blue-600",
+    },
+    {
+        label: "Editing",
+        href: "/editing",
+        color: "bg-rose-100 text-rose-600",
+    },
+    {
+        label: "Govt Jobs Updates",
+        href: "/govt-jobs-updates",
+        color: "bg-yellow-100 text-yellow-600",
+    },
+    {
+        label: "Files & Materials",
+        href: "/files-materials",
+        color: "bg-zinc-100 text-zinc-600",
+    },
+    {
+        label: "Internships",
+        href: "/internships",
+        color: "bg-lime-100 text-lime-600",
+    },
+    {
+        label: "Scholarships",
+        href: "/scholarships",
+        color: "bg-fuchsia-100 text-fuchsia-600",
+    },
+    {
+        label: "Current Affairs",
+        href: "/current-affairs",
+        color: "bg-amber-100 text-amber-600",
+    },
+];
 
 export default function RightRail() {
 
@@ -201,73 +278,33 @@ export default function RightRail() {
 
 
 
-    const getStudyMaterial = async (): Promise<StudyMaterialResponse> => {
-        const response = await fetch("/api/studymaterial");
-
-        if (!response.ok) {
-            throw new Error("Failed to fetch studymaterial");
+    const getStudyMaterial = async () => {
+        try {
+            const response = await fetch("/api/files?limit=5");
+            if (!response.ok) return [];
+            const data = await response.json();
+            return data.files || [];
+        } catch {
+            return [];
         }
-
-        return response.json();
     };
 
-
-
     const {
-        data: data2,
-        isLoading: loading2,
-        error: error2,
+        data: studyFilesData,
+        isLoading: loadingStudyFiles,
     } = useQuery({
-        queryKey: ["studymaterial"],
+        queryKey: ["homepage-study-files"],
         queryFn: getStudyMaterial,
     });
 
+    const pdfs = studyFilesData || [];
+
+    const [randomCategories, setRandomCategories] = useState(cats.slice(0, 8));
 
     useEffect(() => {
-        if (data2) {
-
-            // console.log("1 st data", data2.data)
-
-        }
-    }, [data2?.data]);
-
-
-    const pdfs = data2?.data || [];
-
-
-
-    const getPopularTopics = async (): Promise<PopularTopicsResponse> => {
-        const response = await fetch("/api/populartopics");
-
-        if (!response.ok) {
-            throw new Error("Failed to fetch populartopics");
-        }
-
-        return response.json();
-    };
-
-
-
-    const {
-        data: data3,
-        isLoading: loading3,
-        error: error3,
-    } = useQuery({
-        queryKey: ["populartopics"],
-        queryFn: getPopularTopics,
-    });
-
-
-    useEffect(() => {
-        if (data3) {
-
-            // console.log("1 st data", data3.data)
-
-        }
-    }, [data3?.data]);
-
-
-    const topics = data3?.data || [];
+        const shuffled = [...cats].sort(() => 0.5 - Math.random());
+        setRandomCategories(shuffled.slice(0, 8));
+    }, []);
 
 
 
@@ -462,23 +499,6 @@ export default function RightRail() {
 
 
 
-    // const pdfs = [
-    //     "RRB NTPC Full Syllabus PDF Download",
-    //     "SSC CGL Previous Year Question Papers",
-    //     "General Knowledge Notes (Short & Easy)",
-    // ];
-    // const topics = [
-    //     { l: "SSC CGL", c: "bg-blue-100 text-blue-600" },
-    //     { l: "RRB NTPC", c: "bg-green-100 text-green-600" },
-    //     { l: "AP Inter", c: "bg-red-100 text-red-600" },
-    //     { l: "TS TET", c: "bg-purple-100 text-purple-600" },
-    //     { l: "Current Affairs", c: "bg-orange-100 text-orange-600" },
-    //     { l: "Jobs 2024", c: "bg-pink-100 text-pink-600" },
-    //     { l: "Study Tips", c: "bg-blue-100 text-blue-600" },
-    //     { l: "AI Tools", c: "bg-green-100 text-green-600" },
-    //     { l: "Make Money", c: "bg-purple-100 text-purple-600" },
-    //     { l: "YT Growth", c: "bg-pink-100 text-pink-600" },
-    // ];
     return (
         <div className="space-y-5 pl-2">
             {/* Health News Section */}
@@ -517,23 +537,56 @@ export default function RightRail() {
 
 
 
-            {/* Study Material */}
-            <div className="bg-card mt-4 border border-border rounded-xl overflow-hidden">
-                <div className="px-4 py-3 bg-green-100 border-b border-border flex items-center justify-between">
-                    <h3 className="font-bold flex items-center gap-2 text-green-700"><BookOpen className="w-4 h-4" /> Study Material</h3>
-                    <a className="text-xs font-semibold text-green-600 flex items-center">View All <ChevronRight className="w-3 h-3" /></a>
+            {/* Study Material (5 Recent Study Files from Repository) */}
+            <div className="bg-card mt-4 border border-border rounded-xl overflow-hidden shadow-2xs">
+                <div className="px-4 py-3 bg-emerald-50 dark:bg-emerald-950/40 border-b border-border flex items-center justify-between">
+                    <h3 className="font-bold flex items-center gap-2 text-emerald-800 dark:text-emerald-300 text-sm">
+                        <BookOpen className="w-4 h-4 text-emerald-600" /> Study Material
+                    </h3>
+                    <Link
+                        href="/files-materials"
+                        className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 flex items-center gap-0.5 transition-colors"
+                    >
+                        <span>View All</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
                 </div>
                 <ul className="p-3 space-y-2">
-                    {pdfs.map((p) => (
-                        <li key={p.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer">
-                            <FileText className="w-5 h-5 text-accent-red shrink-0" />
-                            <span className="text-sm font-medium flex-1">{p.title}</span>
-                            <span className="text-[10px] font-bold text-muted">PDF</span>
-                        </li>
-                    ))}
-                    <button className="w-full mt-2 bg-green-600 text-white py-2.5 rounded-lg text-sm font-bold">
-                        Download All PDFs
-                    </button>
+                    {pdfs.length > 0 ? (
+                        pdfs.slice(0, 5).map((p: any) => (
+                            <li key={p.id}>
+                                <a
+                                    href={p.fileUrl || "/files-materials"}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors group cursor-pointer"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/40 flex items-center justify-center shrink-0 border border-red-100 dark:border-red-900/30">
+                                        <FileText className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-emerald-600 transition-colors line-clamp-1 block">
+                                            {p.title}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
+                                            {p.fileSize || "Free Download"}
+                                        </span>
+                                    </div>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 shrink-0 uppercase">
+                                        {p.fileType || "PDF"}
+                                    </span>
+                                </a>
+                            </li>
+                        ))
+                    ) : (
+                        <li className="text-xs text-slate-400 py-3 text-center">No study files uploaded yet.</li>
+                    )}
+                    <Link
+                        href="/files-materials"
+                        className="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-xs font-bold text-center block transition-colors shadow-2xs"
+                    >
+                        View All Study Files & PDFs
+                    </Link>
                 </ul>
             </div>
 
@@ -549,12 +602,25 @@ export default function RightRail() {
                 </div>
             </div>
 
-            {/* Popular Topics */}
-            <div className="bg-card border border-border rounded-xl p-4">
-                <h3 className="font-bold flex items-center gap-2"><TrendingUp className="w-4 h-4 text-accent-orange" /> Popular Topics</h3>
-                <div className="mt-3 flex flex-wrap gap-2">
-                    {topics.map((t) => (
-                        <span key={t.id} className={`text-xs font-semibold px-3 py-1.5 rounded-md ${t.labelColor} cursor-pointer`}>{t.topic}</span>
+            {/* Popular Topics (8 Random Categories from 19 Categories) */}
+            <div className="bg-card border border-border rounded-xl p-4 shadow-2xs">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                    <h3 className="font-bold flex items-center gap-2 text-sm text-gray-900 dark:text-gray-100">
+                        <TrendingUp className="w-4 h-4 text-orange-500" /> Popular Topics
+                    </h3>
+                    <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                        Categories
+                    </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {randomCategories.map((cat, idx) => (
+                        <Link
+                            key={idx}
+                            href={cat.href}
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all transform hover:-translate-y-0.5 hover:shadow-xs inline-flex items-center ${cat.color}`}
+                        >
+                            {cat.label}
+                        </Link>
                     ))}
                 </div>
             </div>

@@ -20,22 +20,49 @@ declare module "@tiptap/core" {
   }
 }
 
-export function getEmbedUrl(url: string): { type: "embed" | "direct"; url: string } {
+export function getEmbedUrl(url: string): { type: "embed" | "direct"; url: string; isYouTube?: boolean; isShorts?: boolean; poster?: string } {
   if (!url) return { type: "direct", url: "" };
 
-  // YouTube (standard, shorts, shared, embedded)
-  const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?\/ ]{11})/i);
+  const clean = url.trim();
+
+  // YouTube Shorts specifically
+  const shortsMatch = clean.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/i);
+  if (shortsMatch) {
+    const videoId = shortsMatch[1];
+    return {
+      type: "embed",
+      url: `https://www.youtube.com/embed/${videoId}`,
+      isYouTube: true,
+      isShorts: true,
+      poster: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+    };
+  }
+
+  // All other YouTube variants (watch?v=, youtu.be/, embed/, live/, etc.)
+  const ytMatch = clean.match(/(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|live)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
   if (ytMatch) {
-    return { type: "embed", url: `https://www.youtube.com/embed/${ytMatch[1]}` };
+    const videoId = ytMatch[1];
+    return {
+      type: "embed",
+      url: `https://www.youtube.com/embed/${videoId}`,
+      isYouTube: true,
+      isShorts: false,
+      poster: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+    };
   }
 
   // Vimeo
-  const vimeoMatch = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/i);
+  const vimeoMatch = clean.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/i);
   if (vimeoMatch) {
-    return { type: "embed", url: `https://player.vimeo.com/video/${vimeoMatch[1]}` };
+    return {
+      type: "embed",
+      url: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+      isYouTube: false,
+      isShorts: false
+    };
   }
 
-  return { type: "direct", url: url };
+  return { type: "direct", url: clean };
 }
 
 export const CustomVideo = Node.create({
@@ -133,6 +160,7 @@ export const CustomVideo = Node.create({
           "iframe",
           {
             src: url,
+            loading: "lazy",
             frameborder: "0",
             allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
             allowfullscreen: "",
@@ -160,6 +188,8 @@ export const CustomVideo = Node.create({
           src: src,
           poster: HTMLAttributes.thumbnail || "",
           controls: "",
+          preload: "none",
+          playsinline: "",
           class: `${aspectClass} rounded-lg`,
         },
       ],

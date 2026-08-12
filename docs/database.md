@@ -1,58 +1,82 @@
-# PostgreSQL Database Administration Guide
+# PostgreSQL Database & Prisma ORM Architecture
 
-## Purpose
-This document provides instructions on how to manage, migrate, and backup the PostgreSQL database inside the NewsRoom Docker architecture.
-
----
-
-## Architecture details
-*   **Container**: `news_postgres` based on `postgres:16-alpine`.
-*   **Storage**: Persistent volume named `news_postgres_data` mapped to `/var/lib/postgresql/data` inside the container.
-*   **Settings**: Tuning configurations are injected from `docker/postgres/postgresql.conf`.
-*   **Timezone**: Forced to `UTC` to maintain consistent time tracking records across server logic.
+## 1. Purpose
+This document details the PostgreSQL 16 database architecture, configuration, data persistence, and Prisma ORM workflow for production.
 
 ---
 
-## Migration & Initialization Workflow
+## 2. Configuration & Tuning
 
-Prisma is the primary database manager. The migrations are executed during deployment:
+### Database Engine Settings (`docker/postgres/postgresql.conf`)
+The database configuration is tuned for resource efficiency on a single DigitalOcean Droplet:
+* **`shared_buffers = 256MB`**: Allocates 25% of available RAM for internal page cache.
+* **`work_mem = 4MB`**: Dedicated memory per sort/hash operation to prevent disk spill.
+* **`maintenance_work_mem = 64MB`**: Accelerates index creation and vacuuming.
+* **`effective_cache_size = 768MB`**: Helps the query planner estimate OS cache capacity.
+* **`client_encoding = 'UTF8'`**: Standard multilingual character encoding.
+* **`timezone = 'UTC'`**: Standardized timestamp persistence.
+* **`log_min_duration_statement = 250`**: Logs slow queries taking longer than 250ms for performance monitoring.
 
-### 1. Apply Migrations (Production)
-Applies existing Prisma migrations located in the `/prisma/migrations` folder to the target database:
+### Volume & Data Persistence
+Data is stored inside named volume `news_postgres_data` mapped to `/var/lib/postgresql/data`. This guarantees data persists across container rebuilds, updates, and restarts.
+
+---
+
+## 3. Prisma Workflow & Compatibility
+
+- **Binary Targets:** `schema.prisma` includes `native` and `rhel-openssl-3.0.x` to guarantee cross-compatibility across Debian/Ubuntu/Docker environments.
+- **Connection Handling:** Handled via singleton in [lib/prisma.ts](file:///c:/Users/lovar/news-website/lib/prisma.ts) to prevent connection pool exhaustion during Next.js Hot Module Reloading (HMR) and SSR.
+
+---
+
+## 4. Commands
+
+### Apply Database Migrations (Production)
 ```bash
 ./scripts/prisma_migrate.sh
+# Equivalent direct command:
+docker compose exec nextjs npx prisma migrate deploy
 ```
 
-### 2. Manual Client Generation
-Triggers compilation updates to regenerate Prisma Client structures inside the Next.js container context:
+### Generate Prisma Client
 ```bash
 ./scripts/prisma_generate.sh
+# Equivalent direct command:
+docker compose exec nextjs npx prisma generate
 ```
 
----
-
-## Backups & Restores
-
-To prevent loss of user articles, schedule database backups regularly:
-
-### 1. Create a Backup
-Dump schema details and table rows into a `.sql` file:
+### Database Backup
 ```bash
 ./scripts/backup_db.sh
+# Dumps a timestamped gzip file to backups/postgres_backup_YYYYMMDD_HHMMSS.sql.gz
 ```
-*   This creates an archival dump inside the host `backups/` directory (e.g., `backups/news_db_backup_20260627_120000.sql`).
 
-### 2. Restore from a Backup
-Overwrites the current container database contents using a backup file:
+### Database Restore
 ```bash
-./scripts/restore_db.sh backups/<backup_file_name>.sql
+./scripts/restore_db.sh backups/postgres_backup_YYYYMMDD_HHMMSS.sql.gz
 ```
-*   *Note*: This requires typing `y` to confirm data overwrite.
+
+### Direct PostgreSQL CLI Access
+```bash
+docker compose exec -it postgres psql -U postgres -d news_db
+```
 
 ---
 
-## Troubleshooting
-*   **Schema Out of Sync**: If models diverge from active tables:
-    1.  Validate database connection strings.
-    2.  Run migration deployment inside the container stack using `./scripts/prisma_migrate.sh`.
-*   **Locks or Connection Limit Reached**: Check active connections. The maximum is tuned to `100` connections in `postgresql.conf`.
+## 5. Troubleshooting
+
+### "Too many connections"
+- Ensure Next.js connects via the singleton instance in `lib/prisma.ts`.
+- Adjust `max_connections = 100` in `docker/postgres/postgresql.conf` if necessary.
+
+### Migration Lock or Sync Issues
+- Check the `_prisma_migrations` table inside the database:
+  ```bash
+  docker compose exec postgres psql -U postgres -d news_db -c "SELECT * FROM _prisma_migrations;"
+  ```
+
+---
+
+## 6. Migration Path
+- **DigitalOcean Managed PostgreSQL:** Point `DATABASE_URL` in `.env` to DigitalOcean Managed DB cluster and comment out the local `postgres` service in `docker-compose.yml`.
+- **Read Replicas:** When read traffic spikes, Prisma client can configure multi-URL connections (primary/replica) seamlessly.

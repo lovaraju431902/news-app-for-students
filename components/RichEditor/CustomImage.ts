@@ -32,6 +32,13 @@ export const CustomImage = Image.extend({
           "data-alignment": attributes.alignment,
         }),
       },
+      loading: {
+        default: "lazy",
+        renderHTML: () => ({
+          loading: "lazy",
+          decoding: "async",
+        }),
+      },
     };
   },
 

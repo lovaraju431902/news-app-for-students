@@ -63,6 +63,32 @@ export async function createTagAction(name: string, parentId?: string | null) {
   }
 }
 
+export async function deleteTagAction(id: string) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: "Unauthorized access." };
+  }
+
+  try {
+    // Delete any subcategories/children first to avoid foreign key constraints
+    await prisma.tag.deleteMany({
+      where: { parentId: id },
+    });
+
+    await prisma.tag.delete({
+      where: { id },
+    });
+
+    revalidatePath("/");
+    revalidatePath("/blogs");
+    revalidatePath("/[category]", "layout");
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to delete tag." };
+  }
+}
+
 export async function createBlogAction(data: {
   title: string;
   slug: string;

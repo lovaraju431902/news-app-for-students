@@ -15,13 +15,14 @@ import {
     CardTitle,
 } from "../ui/card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MediaPicker } from "@/components/ui/media-picker";
 
 export const VideoGallerySchema = z.object({
     title: z.string().min(3, "Title is required"),
-    image: z.string().url("Enter a valid image URL"),
+    image: z.string().min(1, "Image / Thumbnail is required"),
     duration: z.string().min(1, "Duration is required (e.g. 03:02)"),
     category: z.string().min(1, "Category is required (e.g. Cinema, Telugu Video)"),
-    href: z.string().min(1, "Link is required"),
+    href: z.string().min(1, "Link or Video Stream URL is required"),
     isActive: z.boolean(),
 });
 
@@ -40,8 +41,8 @@ export default function VideoGalleryForm() {
         defaultValues: {
             title: "",
             image: "",
-            duration: "",
-            category: "",
+            duration: "03:45",
+            category: "Telugu News",
             href: "",
             isActive: false,
         },
@@ -87,7 +88,7 @@ export default function VideoGalleryForm() {
                 <CardTitle>Create Video Gallery Item</CardTitle>
             </CardHeader>
             <CardContent>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     {/* Title */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Title</label>
@@ -100,15 +101,38 @@ export default function VideoGalleryForm() {
                         )}
                     </div>
 
-                    {/* Image URL */}
+                    {/* 1. Thumbnail / Poster Image Picker */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Image URL</label>
-                        <Input
-                            placeholder="https://example.com/image.jpg"
-                            {...register("image")}
+                        <MediaPicker
+                            label="1. Video Thumbnail (.WebP)"
+                            type="image"
+                            value={watch("image")}
+                            onChange={(url) => setValue("image", url, { shouldValidate: true })}
+                            placeholder="Click or drag video thumbnail (Auto-converted to .WebP)"
+                            helperText="High-performance .WebP thumbnail for gallery display."
                         />
                         {errors.image && (
-                            <p className="text-sm text-red-550">{errors.image.message}</p>
+                            <p className="text-sm text-red-500">{errors.image.message}</p>
+                        )}
+                    </div>
+
+                    {/* 2. Video Stream / File Picker */}
+                    <div className="space-y-2">
+                        <MediaPicker
+                            label="2. Video Stream (.WebM / Video File)"
+                            type="video"
+                            value={watch("href")}
+                            onChange={(url) => setValue("href", url, { shouldValidate: true })}
+                            placeholder="Click or drag .webm / video file"
+                            helperText="Video stream file uploaded to Cloudflare."
+                        />
+                        <Input
+                            placeholder="Or enter custom / YouTube / video link (e.g. https://... or /videos/1)"
+                            {...register("href")}
+                            className="mt-1"
+                        />
+                        {errors.href && (
+                            <p className="text-sm text-red-500">{errors.href.message}</p>
                         )}
                     </div>
 
@@ -120,7 +144,7 @@ export default function VideoGalleryForm() {
                             {...register("duration")}
                         />
                         {errors.duration && (
-                            <p className="text-sm text-red-550">{errors.duration.message}</p>
+                            <p className="text-sm text-red-500">{errors.duration.message}</p>
                         )}
                     </div>
 
@@ -132,19 +156,7 @@ export default function VideoGalleryForm() {
                             {...register("category")}
                         />
                         {errors.category && (
-                            <p className="text-sm text-red-550">{errors.category.message}</p>
-                        )}
-                    </div>
-
-                    {/* Link */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Link</label>
-                        <Input
-                            placeholder="/videos/1"
-                            {...register("href")}
-                        />
-                        {errors.href && (
-                            <p className="text-sm text-red-500">{errors.href.message}</p>
+                            <p className="text-sm text-red-500">{errors.category.message}</p>
                         )}
                     </div>
 

@@ -1,33 +1,54 @@
-# Meilisearch Search Service Guide
+# Meilisearch Engine Architecture
 
-## Purpose
-This document outlines the Meilisearch database configurations, endpoint statuses, and indexing workflows for the NewsRoom platform.
-
----
-
-## Configuration Details
-*   **Container**: `news_meilisearch` using `getmeili/meilisearch:v1.8`.
-*   **Storage**: Persistent volume `news_meilisearch_data` mapped to `/meili_data`.
-*   **Access Port**: `7700` (isolated internally within `news_network` bridge network).
-*   **Security Settings**: Runs in `production` mode, which automatically disables default sandbox configs and enforces master key verification.
+## 1. Purpose
+This document details the Meilisearch v1.8 integration, persistent storage, master key security, and search engine configuration.
 
 ---
 
-## Service Operations
+## 2. Configuration & Features
 
-### Check Health status
-Executes a quick endpoint query against Meilisearch inside the container environment:
+### Container Specifications
+* **Docker Image:** `getmeili/meilisearch:v1.8`
+* **Environment:**
+  - `MEILI_HOST: 0.0.0.0:7700`
+  - `MEILI_ENV: production` (requires master key with minimum 16 bytes)
+  - `MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}`
+* **Storage Volume:** `meilisearch_data` mapped to `/meili_data`.
+* **Health Check:** Configured via `curl -f http://localhost:7700/health` with 10s interval.
+
+---
+
+## 3. Commands
+
+### Check Health Status
 ```bash
-docker compose exec -t meilisearch curl -f http://localhost:7700/health
+docker compose exec meilisearch curl -sf http://localhost:7700/health
 ```
-*   **Expected JSON output**: `{"status":"available"}`
+
+### Inspect Version and Engine Status
+```bash
+docker compose exec meilisearch curl -s http://localhost:7700/version
+```
+
+### Check Indexes (Using Master Key)
+```bash
+docker compose exec meilisearch curl -s \
+  -H "Authorization: Bearer <YOUR_MEILI_MASTER_KEY>" \
+  http://localhost:7700/indexes
+```
 
 ---
 
-## Future Migration Path (Phase 2)
-Currently, the application implements PostgreSQL-based weighted full-text search (`lib/search-service.ts`). Meilisearch has been spun up as part of the container architecture to prepare for high-scale traffic.
+## 4. Troubleshooting
 
-Once Phase 2 is approved, we will:
-1.  Add a synchronization event trigger inside blog mutations (e.g. create/update/delete) that pushes structured article payloads to Meilisearch index endpoints.
-2.  Enable search queries on the `/search` route via Meilisearch indexes instead of SQL query scans.
-3.  Configure index parameters like `searchableAttributes` (title, content, tags) and `rankingRules` for optimized search results.
+### Meilisearch Exits Immediately on Startup
+- Check master key length. In production mode (`MEILI_ENV=production`), Meilisearch requires the key to be at least 16 bytes long.
+- Inspect logs:
+  ```bash
+  docker compose logs meilisearch
+  ```
+
+---
+
+## 5. Migration Path
+- **Meilisearch Cloud / Dedicated Search Cluster:** Switch `MEILI_URL` and `MEILI_MASTER_KEY` in `.env` to point to an external cluster without requiring Next.js code modifications.

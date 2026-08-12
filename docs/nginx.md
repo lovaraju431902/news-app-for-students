@@ -1,62 +1,68 @@
-# Nginx Reverse Proxy Documentation
+# Nginx Reverse Proxy & Security Architecture
 
-## Purpose
-This document outlines the Nginx setup, upstream reverse proxy, rate limiting, and security configurations configured on the NewsRoom application stack.
-
----
-
-## Configuration Architecture
-*   **Container**: `news_nginx` running `nginxinc/nginx-unprivileged:alpine`.
-*   **Security Context**: Runs as non-root user `nginx`. Because standard ports below `1024` are restricted, Nginx listens on port `8080` (HTTP) and `8443` (HTTPS) inside the container.
-*   **Host Port Bindings**:
-    *   Host `80` redirects to Container `8080`.
-    *   Host `443` redirects to Container `8443`.
+## 1. Purpose
+This document explains the Nginx reverse proxy configuration, non-root security containerization, SSL termination, caching layers, compression, and request rate limiting.
 
 ---
 
-## Key Configurations
+## 2. Configuration & Security
 
-### 1. Security Headers
-Injects standard OWASP headers to defend against clickjacking, CSS sniffing, cross-site scripting (XSS), and script injecting:
-```nginx
-add_header X-Frame-Options "SAMEORIGIN" always;
-add_header X-Content-Type-Options "nosniff" always;
-add_header X-XSS-Protection "1; mode=block" always;
-add_header Referrer-Policy "no-referrer-when-downgrade" always;
-add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
-```
+### Container Architecture
+* **Image:** `nginxinc/nginx-unprivileged:alpine`
+* **Non-Root Execution:** Runs under UID 101 (`nginx`), binding to unprivileged ports `8080` (mapped to host `80`) and `8443` (mapped to host `443`).
+* **Process Management:** `worker_processes auto` with `epoll` connection model.
 
-### 2. Upstream Caching
-Defines static mapping caching zones (`STATIC`) storing client assets locally for up to 7 days:
-```nginx
-proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=STATIC:10m inactive=7d use_temp_path=off;
-```
-Enforces cache header limits on `_next/static/` directories:
-```nginx
-add_header Cache-Control "public, max-age=31536000, immutable";
-```
-
-### 3. API Rate Limiting
-Enforces rate limits on `/api/` endpoints to protect against DDoS or crawling scrapers. Allows up to 10 requests per second with a burst queue up to 20:
-```nginx
-limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
-```
-
-### 4. Gzip Compression
-Compresses text, CSS, JS, JSON, and SVG data on the fly before transmitting to the client, reducing bandwidth usage.
+### Key Nginx Features
+1. **Security Headers (OWASP Recommended):**
+   - `X-Frame-Options: SAMEORIGIN`
+   - `X-Content-Type-Options: nosniff`
+   - `X-XSS-Protection: 1; mode=block`
+   - `Referrer-Policy: no-referrer-when-downgrade`
+   - `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
+   - `server_tokens off` (Hides Nginx version)
+2. **Rate Limiting:**
+   - `limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;`
+   - Protects `/api/` endpoints with `burst=20 nodelay`.
+3. **Static Caching:**
+   - Microcaching on `/_next/static/` with 1-year immutable cache control headers.
+   - Public assets (images, fonts, css) cached with 30-day client expiration.
+4. **Large File Uploads:**
+   - `client_max_body_size 50M;` enables smooth media and document uploads.
+5. **Compression:**
+   - Gzip enabled across text, JSON, JS, CSS, and SVG types at compression level 6.
+6. **WebSockets:**
+   - Full support for `Upgrade` and `Connection` headers for real-time features.
 
 ---
 
-## Operational Commands
+## 3. Commands
 
-### Test Configuration Syntax
-Checks configurations for syntax issues or configuration errors:
+### Test Nginx Configuration Syntax
 ```bash
-docker compose exec -t nginx nginx -t
+docker compose exec nginx nginx -t
 ```
 
-### Reload Configuration
-Applies config updates without stopping active container services:
+### Reload Configuration (Zero Downtime)
 ```bash
-docker compose exec -t nginx nginx -s reload
+docker compose exec nginx nginx -s reload
 ```
+
+### Inspect Nginx Access / Error Logs
+```bash
+docker compose logs -f nginx
+```
+
+---
+
+## 4. Troubleshooting
+
+### 413 Payload Too Large
+- Check `client_max_body_size` in `docker/nginx/nginx.conf`. Increase if larger video/audio files are required.
+
+### 502 Bad Gateway
+- Check that the `news_nextjs` container is healthy and responding on port `3000`.
+
+---
+
+## 5. Migration Path
+- In multi-server or Kubernetes setups, Nginx can be swapped for an Ingress Controller (e.g. NGINX Ingress or Traefik) while preserving identical header rules and cache policies.

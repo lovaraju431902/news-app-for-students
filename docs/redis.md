@@ -1,45 +1,60 @@
-# Redis Cache Administration Guide
+# Redis Cache Architecture
 
-## Purpose
-This document explains the Redis configuration, caching topology, and data management inside the NewsRoom Docker Compose environment.
-
----
-
-## Configuration Details
-*   **Container**: `news_redis` running `redis:7-alpine`.
-*   **Persistent Storage**: Volume `news_redis_data` mapping to `/data` in container filesystems.
-*   **Tuning File**: `docker/redis/redis.conf`.
-
-### Key Policies
-1.  **Persistence (AOF)**: Appends database commands to `appendonly.aof` file every second (`appendfsync everysec`). In the event of system shutdown, Redis restores data directly from this log.
-2.  **LRU Eviction**: Sets memory bounds to `maxmemory 256mb`. Under resource pressure, Redis discards the least recently used keys (`maxmemory-policy allkeys-lru`).
-3.  **Password Security**: Implements `protected-mode yes` and enforces password authorization using command lines `redis-server --requirepass <password>`.
+## 1. Purpose
+This document details the Redis 7 container configuration, memory policies, persistence model, and authentication strategy for fast in-memory caching.
 
 ---
 
-## Administrative Commands
+## 2. Configuration & Features
 
-### Test Connection
-Connect to Redis command console and run ping checks:
+### Redis Configuration (`docker/redis/redis.conf`)
+* **Persistence (AOF & Snapshots):**
+  - `appendonly yes` with `appendfsync everysec` ensures maximum 1 second data loss tolerance.
+  - Periodic RDB snapshotting enabled (`save 900 1`, `save 300 10`, `save 60 10000`).
+* **Memory Management:**
+  - `maxmemory 256mb`
+  - `maxmemory-policy allkeys-lru` (evicts least recently used keys when memory limit is reached).
+* **Security & Authentication:**
+  - `protected-mode yes`
+  - Password authentication enforced via `--requirepass ${REDIS_PASSWORD}` injected by Docker Compose.
+
+### Data Volume
+Stored in named volume `news_redis_data` mounted at `/data`.
+
+---
+
+## 3. Commands
+
+### Redis CLI Access
 ```bash
-# Retrieve Redis password from environment settings
-REDIS_PASS=$(grep '^REDIS_PASSWORD=' .env | cut -d '=' -f2 | xargs)
-
-# Execute interactive ping
-docker compose exec -it redis redis-cli -a "$REDIS_PASS" ping
-```
-*   **Expected Response**: `PONG`
-
-### Flush Cache
-If caching states must be cleared manually:
-```bash
-docker compose exec -it redis redis-cli -a "$REDIS_PASS" flushall
+docker compose exec -it redis redis-cli -a "<YOUR_REDIS_PASSWORD>"
 ```
 
+### Check Redis Health & Ping
+```bash
+docker compose exec redis redis-cli -a "<YOUR_REDIS_PASSWORD>" ping
+```
+
+### Inspect Redis Memory & Keyspace Stats
+```bash
+docker compose exec redis redis-cli -a "<YOUR_REDIS_PASSWORD>" info memory
+docker compose exec redis redis-cli -a "<YOUR_REDIS_PASSWORD>" info stats
+```
+
 ---
 
-## Future Migration Path (Phase 2)
-In Phase 1, the Next.js application continues connecting to Upstash Redis REST endpoints as configured in `.env`.
-Once you approve Phase 2 caching implementations:
-*   The caching client in `lib/redis.ts` will be updated to point to the local Redis container upstream address `redis://:password@redis:6379`.
-*   This will keep all caching traffic local to the droplet and remove external REST latency.
+## 4. Troubleshooting
+
+### "NOAUTH Authentication required"
+- Verify that `REDIS_PASSWORD` in `.env` is supplied and matches the client connection string in `REDIS_URL`.
+
+### OOM / Memory Pressure
+- Redis is bounded to `256mb` by default. Under heavy caching loads, inspect large keys using:
+  ```bash
+  docker compose exec redis redis-cli -a "<PASSWORD>" --bigkeys
+  ```
+
+---
+
+## 5. Migration Path
+- **DigitalOcean Managed Redis / Upstash:** Update `REDIS_URL` to point to the managed cluster URI and scale up instances with zero downtime.

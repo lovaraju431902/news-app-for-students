@@ -15,21 +15,23 @@ import {
     CardTitle,
 } from "../ui/card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MediaPicker } from "@/components/ui/media-picker";
+import {
+    MAIN_10_COLORS,
+    getDefaultISODate,
+    formatDateStringToReadable,
+    getRandomBadgeColor,
+} from "./form-helpers";
 
 export const RightcardSchema = z.object({
     title: z.string().min(3, "Title is required"),
-
-    image: z.string().url("Enter a valid image URL"),
-
+    image: z.string().min(1, "Image is required"),
     date: z.string().min(1, "Date is required"),
-
     href: z.string().min(1, "Href is required"),
-
     badge: z.object({
         label: z.string().min(1, "Badge label is required"),
         color: z.string().min(1, "Badge color is required"),
     }),
-
     isActive: z.boolean(),
 });
 
@@ -50,100 +52,76 @@ export default function RightCardForm() {
         defaultValues: {
             title: "",
             image: "",
-            date: "",
+            date: getDefaultISODate(),
             href: "",
             badge: {
                 label: "",
-                color: "",
+                color: getRandomBadgeColor(),
             },
             isActive: false,
         },
     });
 
     const isActive = watch("isActive");
+    const currentColor = watch("badge.color");
 
+    const createRightcards = async (data: RightCardFormValues) => {
+        const payload = {
+            ...data,
+            date: formatDateStringToReadable(data.date),
+        };
 
-
-
-
-
-
-
-
-
-    const createRightcards = async (
-        data: RightCardFormValues
-    ) => {
         const response = await fetch("/api/rightcard", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
-            throw new Error("Failed to create slide");
+            throw new Error("Failed to create Right Card");
         }
 
         return response.json();
     };
 
-
-
-
     const mutation = useMutation({
         mutationFn: createRightcards,
-
         onSuccess: (data) => {
-            console.log(data);
             queryClient.invalidateQueries();
-            alert("Slide created successfully");
+            alert("Right Card created successfully");
         },
-
         onError: (error) => {
             console.error(error);
-            alert("Failed to create slide");
+            alert("Failed to create Right Card");
         },
     });
 
-
-
-
-
-    const onSubmit = async (
-        values: RightCardFormValues
-    ) => {
+    const onSubmit = async (values: RightCardFormValues) => {
         mutation.mutate(values);
     };
-
-
-
-
-
 
     return (
         <Card className="max-w-3xl">
             <CardHeader>
-                <CardTitle>Create Slide</CardTitle>
+                <CardTitle>Create Right Card</CardTitle>
             </CardHeader>
 
             <CardContent>
                 <form
                     onSubmit={handleSubmit(onSubmit)}
-                    className="space-y-5"
+                    className="space-y-6"
                 >
                     {/* Title */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
                             Title
                         </label>
-
                         <Input
-                            placeholder="Latest Government Jobs"
+                            placeholder="SSC CGL 2024 Exam Notification"
                             {...register("title")}
                         />
-
                         {errors.title && (
                             <p className="text-sm text-red-500">
                                 {errors.title.message}
@@ -151,17 +129,16 @@ export default function RightCardForm() {
                         )}
                     </div>
 
-                    {/* Image */}
+                    {/* Image / Thumbnail Picker */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                            Image URL
-                        </label>
-
-                        <Input
-                            placeholder="https://example.com/image.jpg"
-                            {...register("image")}
+                        <MediaPicker
+                            label="CARD IMAGE (.WEBP)"
+                            type="image"
+                            value={watch("image")}
+                            onChange={(url) => setValue("image", url, { shouldValidate: true })}
+                            placeholder="Click or drag card image (Auto-converted to .WebP)"
+                            helperText="Images are automatically converted to .WebP."
                         />
-
                         {errors.image && (
                             <p className="text-sm text-red-500">
                                 {errors.image.message}
@@ -169,41 +146,31 @@ export default function RightCardForm() {
                         )}
                     </div>
 
-                    {/* Read Time */}
-
+                    {/* Date Picker */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
-                            Read Time
+                            Date Picker
                         </label>
-
                         <Input
-                            placeholder="5 min read"
+                            type="date"
                             {...register("date")}
                         />
-
                         {errors.date && (
                             <p className="text-sm text-red-500">
                                 {errors.date.message}
-
                             </p>
                         )}
                     </div>
-
-
-
-
 
                     {/* Link */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
                             Link
                         </label>
-
                         <Input
                             placeholder="/jobs/latest"
                             {...register("href")}
                         />
-
                         {errors.href && (
                             <p className="text-sm text-red-500">
                                 {errors.href.message}
@@ -216,12 +183,10 @@ export default function RightCardForm() {
                         <label className="text-sm font-medium">
                             Badge Label
                         </label>
-
                         <Input
-                            placeholder="Jobs"
+                            placeholder="Trending"
                             {...register("badge.label")}
                         />
-
                         {errors.badge?.label && (
                             <p className="text-sm text-red-500">
                                 {errors.badge.label.message}
@@ -229,17 +194,41 @@ export default function RightCardForm() {
                         )}
                     </div>
 
-                    {/* Badge Color */}
+                    {/* Badge Color (10 Main Colors Selection) */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                            Badge Color
-                        </label>
-
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium">
+                                Badge Color
+                            </label>
+                            <button
+                                type="button"
+                                onClick={() => setValue("badge.color", getRandomBadgeColor())}
+                                className="text-xs text-blue-600 hover:underline"
+                            >
+                                🎲 Random Color
+                            </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            {MAIN_10_COLORS.map((c) => (
+                                <button
+                                    key={c.name}
+                                    type="button"
+                                    onClick={() => setValue("badge.color", c.value, { shouldValidate: true })}
+                                    className={`px-2.5 py-1 rounded-md text-xs font-semibold cursor-pointer border transition-all ${c.value} ${
+                                        currentColor === c.value
+                                            ? "ring-2 ring-blue-500 scale-105 shadow-xs font-bold"
+                                            : "opacity-80 hover:opacity-100"
+                                    }`}
+                                >
+                                    {c.name}
+                                </button>
+                            ))}
+                        </div>
                         <Input
-                            placeholder="green"
+                            placeholder="e.g. bg-emerald-100 text-emerald-600"
                             {...register("badge.color")}
+                            className="mt-1"
                         />
-
                         {errors.badge?.color && (
                             <p className="text-sm text-red-500">
                                 {errors.badge.color.message}
@@ -251,32 +240,31 @@ export default function RightCardForm() {
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div>
                             <p className="font-medium">
-                                Active Slide
+                                Active Card
                             </p>
-
                             <p className="text-sm text-muted-foreground">
-                                Show this slide on homepage
+                                Show this card on homepage
                             </p>
                         </div>
 
                         <Switch
                             checked={isActive}
-                            onCheckedChange={(checked: boolean) =>
-                                setValue("isActive", checked)
+                            onCheckedChange={(val) =>
+                                setValue("isActive", val)
                             }
                         />
                     </div>
 
+                    {/* Submit Button */}
                     <Button
                         type="submit"
                         disabled={mutation.isPending}
                         className="w-full"
                     >
-                        {mutation.isPending ? "Creating Slide..." : "Create Slide"}
+                        {mutation.isPending ? "Creating..." : "Create Right Card"}
                     </Button>
                 </form>
             </CardContent>
         </Card>
-
     );
 }

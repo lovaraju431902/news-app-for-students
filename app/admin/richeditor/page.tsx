@@ -36,7 +36,8 @@ import {
   getBlogByIdAction,
   updateBlogAction,
   seedMainCategoriesAction
-} from "../../actions/blogs";
+} from "@/app/actions/blogs";
+import { MediaPicker } from "@/components/ui/media-picker";
 import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -114,16 +115,13 @@ export default HelloWorld;</code></pre>
 
 function preprocessHtmlContent(html: string): string {
   if (!html) return html;
-  // Regex to match font-size style declarations (e.g. font-size: 20px, font-size:14pt, etc.)
   const fontSizeRegex = /font-size\s*:\s*([\d\.]+(?:px|pt|em|rem|%|vw|vh))/gi;
   return html.replace(fontSizeRegex, (match, val) => {
     return `--original-font-size: ${val}; font-size: min(var(--original-font-size), max(14px, calc(var(--original-font-size) * var(--inline-font-scale, 1))))`;
   });
 }
 
-// Helper to parse HTML content and replace pre/code blocks with the custom CodeBlock React component
 function renderContentWithCodeBlocks(htmlContent: string) {
-  // Loose regex matching any <pre ...><code ...>...</code></pre> regardless of classes or styles
   const regex = /<pre([^>]*)><code([^>]*)>([\s\S]*?)<\/code><\/pre>/g;
 
   const elements: React.ReactNode[] = [];
@@ -143,7 +141,6 @@ function renderContentWithCodeBlocks(htmlContent: string) {
   while ((match = regex.exec(htmlContent)) !== null) {
     const matchIndex = match.index;
 
-    // Add text segment before the code block
     if (matchIndex > lastIndex) {
       elements.push(
         <div
@@ -153,7 +150,6 @@ function renderContentWithCodeBlocks(htmlContent: string) {
       );
     }
 
-    // Extract language from class attributes on pre or code tags
     const attrs = (match[1] || "") + " " + (match[2] || "");
     const langMatch = /class="[^"]*(?:lang|language)-([^"\s]*)/.exec(attrs);
     const lang = langMatch ? langMatch[1] : "tsx";
@@ -177,7 +173,6 @@ function renderContentWithCodeBlocks(htmlContent: string) {
     lastIndex = regex.lastIndex;
   }
 
-  // Add remaining text segment
   if (lastIndex < htmlContent.length) {
     elements.push(
       <div
@@ -213,7 +208,6 @@ function RichEditorPageContent() {
   const [newTagParentId, setNewTagParentId] = useState("");
   const [publishMessage, setPublishMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Parse keywords to list
   const keywordList = seoKeywords ? seoKeywords.split(",").map(k => k.trim()).filter(Boolean) : [];
 
   const removeKeyword = (kwToRemove: string) => {
@@ -263,7 +257,6 @@ function RichEditorPageContent() {
     setSeoKeywords(merged.join(", "));
   };
 
-  // Edit Mode states
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
   const [isEditMode, setIsEditMode] = useState(false);
@@ -271,7 +264,6 @@ function RichEditorPageContent() {
 
   const queryClient = useQueryClient();
 
-  // Load database tags via useQuery
   const { data: tagsData } = useQuery({
     queryKey: ["tags"],
     queryFn: async () => {
@@ -284,7 +276,6 @@ function RichEditorPageContent() {
 
   const dbTags = tagsData || [];
 
-  // Fetch blog detail if editing via useQuery
   const { data: blogToEdit } = useQuery({
     queryKey: ["blog-edit", editId],
     queryFn: async () => {
@@ -296,7 +287,6 @@ function RichEditorPageContent() {
     enabled: !!editId,
   });
 
-  // Pre-fill states when editor loads editId content
   useEffect(() => {
     if (blogToEdit) {
       setTitle(blogToEdit.title);
@@ -353,7 +343,6 @@ function RichEditorPageContent() {
     }
   };
 
-  // Create tag mutation
   const createTagMutation = useMutation({
     mutationFn: async (tagName: string) => {
       if (!tagName.trim() || !mainCategoryId) return;
@@ -363,6 +352,7 @@ function RichEditorPageContent() {
     },
     onSuccess: (newTag) => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-tags"] });
       if (newTag) {
         setSelectedTagIds((prev) => [...prev, newTag.id]);
       }
@@ -377,7 +367,6 @@ function RichEditorPageContent() {
     createTagMutation.mutate(newTagName);
   };
 
-  // Publish / Update mutation
   const publishMutation = useMutation({
     mutationFn: async () => {
       if (!title.trim()) throw new Error("Please enter a blog title.");
@@ -423,8 +412,8 @@ function RichEditorPageContent() {
           ? "Blog post updated successfully!"
           : "Blog post published successfully!"
       });
-      // Invalidate all query caches so front-end components automatically reload latest data
-      queryClient.invalidateQueries();
+      queryClient.invalidateQueries({ queryKey: ["admin-blogs"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
     },
     onError: (err: any) => {
       setPublishMessage({ type: "error", text: err.message });
@@ -437,7 +426,6 @@ function RichEditorPageContent() {
     publishMutation.mutate();
   };
 
-  // Handle responsive view based on window resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024) {
@@ -446,16 +434,12 @@ function RichEditorPageContent() {
         }
       }
     };
-
-    // Call on mount & bind
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [activeTab]);
 
-  // Compute text statistics (words, chars, read-time)
   useEffect(() => {
-    // Strip HTML tags to get pure text content
     const cleanText = content
       .replace(/<[^>]*>/g, " ")
       .replace(/\s+/g, " ")
@@ -463,13 +447,11 @@ function RichEditorPageContent() {
 
     const words = cleanText ? cleanText.split(" ").length : 0;
     const characters = cleanText.length;
-    // Average reading speed: 200 words per minute
     const readTime = Math.max(1, Math.ceil(words / 200));
 
     setStats({ words, characters, readTime });
   }, [content]);
 
-  // Copy operations
   const copyHtmlMarkup = async () => {
     try {
       await navigator.clipboard.writeText(content);
@@ -482,7 +464,6 @@ function RichEditorPageContent() {
 
   const copyJsonRepresentation = async () => {
     try {
-      // Create a mock clean JSON structure for demonstration
       const mockJson = {
         type: "doc",
         content: [
@@ -515,9 +496,9 @@ function RichEditorPageContent() {
       <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
-            href="/"
+            href="/admin"
             className="p-2 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors text-zinc-600 dark:text-zinc-400"
-            title="Back to home"
+            title="Back to Admin Dashboard"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
@@ -589,14 +570,14 @@ function RichEditorPageContent() {
               </button>
             </SheetTrigger>
 
-            <SheetContent className="w-full sm:w-[480px] sm:max-w-[480px] overflow-y-auto border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 flex flex-col gap-6 font-sans">
+            <SheetContent className="w-full sm:w-[480px] sm:max-w-[480px] overflow-y-auto border-l border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 p-6 flex flex-col gap-6 font-sans">
               <SheetHeader className="p-0 border-b border-zinc-100 dark:border-zinc-850 pb-4">
                 <SheetTitle className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                   <Globe className="w-5 h-5 text-emerald-500" />
                   Publishing Settings
                 </SheetTitle>
                 <SheetDescription className="text-xs text-zinc-400">
-                  Configure your article metadata and publish it to Supabase via Prisma.
+                  Configure article metadata, tags, SEO keywords, and publish instantly.
                 </SheetDescription>
               </SheetHeader>
 
@@ -642,15 +623,13 @@ function RichEditorPageContent() {
 
                 {/* Featured Image */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                    Featured Image URL
-                  </label>
-                  <input
-                    type="text"
+                  <MediaPicker
+                    label="Featured Image (.WebP)"
+                    type="image"
                     value={featuredImg}
-                    onChange={(e) => setFeaturedImg(e.target.value)}
-                    placeholder="https://images.unsplash.com/photo-..."
-                    className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-850 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(url) => setFeaturedImg(url)}
+                    placeholder="Click or drag featured image (Auto-converted to .WebP)"
+                    helperText="High-performance .WebP format with lazy loading for fast page speeds."
                   />
                 </div>
 
@@ -684,9 +663,8 @@ function RichEditorPageContent() {
                     </button>
                   </div>
 
-                  {/* Badges display */}
                   {keywordList.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 p-2 border border-dashed border-zinc-200 dark:border-zinc-805 rounded-xl bg-zinc-50/30 dark:bg-zinc-900/10">
+                    <div className="flex flex-wrap gap-1.5 p-2 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/30 dark:bg-zinc-900/10">
                       {keywordList.map((kw, idx) => (
                         <span
                           key={idx}
@@ -728,7 +706,7 @@ function RichEditorPageContent() {
                     }}
                   />
                   <span className="text-[10px] text-zinc-400 block leading-normal">
-                    Enter keywords separated by commas or press Enter. E.g., "earn from instagram", "earning tips for telugu students".
+                    Enter keywords separated by commas or press Enter.
                   </span>
                 </div>
 
@@ -744,7 +722,6 @@ function RichEditorPageContent() {
                       onChange={(e) => {
                         const newMainId = e.target.value;
                         setMainCategoryId(newMainId);
-                        // Clean up selected subtag IDs that do not belong to this new main category.
                         const newMainTag = dbTags.find(t => t.id === newMainId);
                         const childIds = newMainTag?.children?.map((c: any) => c.id) || [];
                         setSelectedTagIds(prev => prev.filter(id => childIds.includes(id)));
@@ -769,7 +746,7 @@ function RichEditorPageContent() {
                     </label>
 
                     {!mainCategoryId ? (
-                      <div className="text-xs text-zinc-500 border border-zinc-200 dark:border-zinc-855 rounded-xl p-4 bg-zinc-50 dark:bg-zinc-900/40 text-center">
+                      <div className="text-xs text-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-zinc-50 dark:bg-zinc-900/40 text-center">
                         Please select a Main Category first to view or add subtags.
                       </div>
                     ) : (() => {
@@ -778,14 +755,14 @@ function RichEditorPageContent() {
 
                       if (childTags.length === 0) {
                         return (
-                          <div className="text-xs text-zinc-500 border border-zinc-200 dark:border-zinc-855 rounded-xl p-4 bg-zinc-50 dark:bg-zinc-900/40 text-center">
+                          <div className="text-xs text-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-zinc-50 dark:bg-zinc-900/40 text-center">
                             No subtags created under "{selectedMainTag?.name}" yet.
                           </div>
                         );
                       }
 
                       return (
-                        <div className="max-h-[160px] overflow-y-auto border border-zinc-200 dark:border-zinc-850 rounded-xl p-3.5 space-y-2 bg-zinc-50/50 dark:bg-zinc-900/30">
+                        <div className="max-h-[160px] overflow-y-auto border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 space-y-2 bg-zinc-50/50 dark:bg-zinc-900/30">
                           {childTags.map((child: any) => {
                             const isChildSelected = selectedTagIds.includes(child.id);
                             return (
@@ -802,7 +779,7 @@ function RichEditorPageContent() {
                                   }}
                                   className="rounded border-zinc-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
                                 />
-                                <span className="text-xs text-zinc-850 dark:text-zinc-200">
+                                <span className="text-xs text-zinc-800 dark:text-zinc-200">
                                   {child.name}
                                 </span>
                               </label>
@@ -831,7 +808,7 @@ function RichEditorPageContent() {
                           type="button"
                           onClick={handleCreateTag}
                           disabled={createTagMutation.isPending}
-                          className="px-4 py-1.5 bg-zinc-900 dark:bg-zinc-800 text-white rounded-lg text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-750 flex items-center justify-center shrink-0 disabled:opacity-50 gap-1"
+                          className="px-4 py-1.5 bg-zinc-900 dark:bg-zinc-800 text-white rounded-lg text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0 disabled:opacity-50 gap-1"
                         >
                           {createTagMutation.isPending ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -864,17 +841,17 @@ function RichEditorPageContent() {
                             return (
                               <Link
                                 href={`/${categorySlug}/${slug}`}
-                                className="text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-750 px-3 py-1.5 rounded-lg transition-colors inline-block"
+                                className="text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg transition-colors inline-block"
                               >
                                 View Live Post
                               </Link>
                             );
                           })()}
                           <Link
-                            href="/blogs"
-                            className="text-[10px] font-bold text-emerald-650 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 px-3 py-1.5 rounded-lg transition-colors inline-block"
+                            href="/admin"
+                            className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 px-3 py-1.5 rounded-lg transition-colors inline-block"
                           >
-                            Go to Blog Search
+                            Go to Dashboard
                           </Link>
                         </div>
                       )}
@@ -885,7 +862,7 @@ function RichEditorPageContent() {
                     type="button"
                     onClick={handlePublish}
                     disabled={publishMutation.isPending}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-750 disabled:opacity-70 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-70 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10"
                   >
                     {publishMutation.isPending ? (
                       <>
@@ -935,7 +912,7 @@ function RichEditorPageContent() {
               onClick={() => setShowStyleControls(!showStyleControls)}
               className={`p-2 border rounded-lg transition-colors flex items-center justify-center ${showStyleControls
                   ? "bg-blue-500/10 border-blue-500/30 text-blue-500"
-                  : "bg-zinc-100 dark:bg-zinc-900 border-zinc-200/50 dark:border-zinc-800/50 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                  : "bg-zinc-100 dark:bg-zinc-900 border-zinc-200/50 dark:border-zinc-800/50 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
                 }`}
               title="Toggle Typography Adjustment Panel"
             >
@@ -948,7 +925,7 @@ function RichEditorPageContent() {
                 type="button"
                 onClick={() => setFontFamily("serif")}
                 className={`px-2.5 py-1 rounded-md text-xs font-semibold font-serif transition-colors ${fontFamily === "serif"
-                  ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
+                  ? "bg-white dark:bg-zinc-800 shadow-sm text-blue-500"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800"
                   }`}
                 title="Serif Font Preview"
@@ -959,7 +936,7 @@ function RichEditorPageContent() {
                 type="button"
                 onClick={() => setFontFamily("sans")}
                 className={`px-2.5 py-1 rounded-md text-xs font-semibold font-sans transition-colors ${fontFamily === "sans"
-                  ? "bg-white dark:bg-zinc-850 shadow-sm text-blue-500"
+                  ? "bg-white dark:bg-zinc-800 shadow-sm text-blue-500"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800"
                   }`}
                 title="Sans-serif Font Preview"
@@ -1046,9 +1023,8 @@ function RichEditorPageContent() {
             </div>
 
             <div className="flex flex-wrap items-center gap-6 flex-1 justify-end">
-              {/* Font Size slider */}
               <div className="flex items-center gap-3 min-w-[200px] flex-1 sm:flex-initial">
-                <span className="text-xs font-bold text-zinc-550 dark:text-zinc-450 select-none w-18 shrink-0">Text Size:</span>
+                <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 select-none w-18 shrink-0">Text Size:</span>
                 <input
                   type="range"
                   min="12"
@@ -1060,9 +1036,8 @@ function RichEditorPageContent() {
                 <span className="font-mono text-xs font-bold text-zinc-800 dark:text-zinc-300 w-10 text-right shrink-0">{fontSize}px</span>
               </div>
 
-              {/* Line Height slider */}
               <div className="flex items-center gap-3 min-w-[200px] flex-1 sm:flex-initial">
-                <span className="text-xs font-bold text-zinc-550 dark:text-zinc-450 select-none w-18 shrink-0">Line Height:</span>
+                <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 select-none w-18 shrink-0">Line Height:</span>
                 <input
                   type="range"
                   min="1.0"
@@ -1120,47 +1095,38 @@ function RichEditorPageContent() {
                   className={`max-w-3xl mx-auto ${fontFamily === "serif" ? "font-serif" : "font-sans"
                     }`}
                 >
-
-                  {/* Article header details */}
                   <div className="border-b-2 border-zinc-900 dark:border-zinc-800 pb-4 mb-6">
                     <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-2">
                       <span>World News</span>
                       <span>•</span>
                       <span>Technology</span>
                     </div>
-                    <div className="text-xs text-zinc-450 dark:text-zinc-400">
-                      Published June 8, 2026 by Editorial Board
+                    <div className="text-xs text-zinc-400 dark:text-zinc-400">
+                      Published by Students Voice Editorial
                     </div>
                   </div>
 
-                  {/* RENDERED RICH HTML WITH DYNAMIC CODEBLOCKS */}
                   <div
                     style={{
                       "--editor-line-height": lineHeight,
                       "--editor-font-size": `${fontSize}px`,
                     } as React.CSSProperties}
-                    className="article-preview-content prose max-w-none text-zinc-850 dark:text-zinc-200 leading-relaxed
+                    className="article-preview-content prose max-w-none text-zinc-800 dark:text-zinc-200 leading-relaxed
                       [&_h1]:[font-size:calc(var(--responsive-font-size,16px)*1.875)]
                       [&_h1]:font-bold [&_h1]:mt-6 [&_h1]:mb-4 [&_h1]:tracking-tight [&_h1]:text-zinc-900 [&_h1]:dark:text-white
                       [&_h2]:[font-size:calc(var(--responsive-font-size,16px)*1.5)]
                       [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-zinc-900 [&_h2]:dark:text-zinc-100
                       [&_h3]:[font-size:calc(var(--responsive-font-size,16px)*1.25)]
-                      [&_h3]:font-bold [&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-zinc-850 [&_h3]:dark:text-zinc-200
+                      [&_h3]:font-bold [&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-zinc-800 [&_h3]:dark:text-zinc-200
                       [&_p]:mb-5 [&_p]:[font-size:var(--responsive-font-size,16px)] [&_p]:[line-height:var(--editor-line-height,1.6)]
-                      [&_blockquote]:border-l-4 [&_blockquote]:border-blue-500 [&_blockquote]:py-3.5 [&_blockquote]:px-5 [&_blockquote]:rounded-r-xl [&_blockquote]:bg-blue-50/50 [&_blockquote]:dark:bg-blue-950/20 [&_blockquote]:italic [&_blockquote]:my-5 [&_blockquote]:text-zinc-655 [&_blockquote]:dark:text-zinc-350 [&_blockquote]:[font-size:calc(var(--responsive-font-size,16px)*1.125)] [&_blockquote]:[line-height:var(--editor-line-height,1.6)]
-                      
+                      [&_blockquote]:border-l-4 [&_blockquote]:border-blue-500 [&_blockquote]:py-3.5 [&_blockquote]:px-5 [&_blockquote]:rounded-r-xl [&_blockquote]:bg-blue-50/50 [&_blockquote]:dark:bg-blue-950/20 [&_blockquote]:italic [&_blockquote]:my-5 [&_blockquote]:text-zinc-600 [&_blockquote]:dark:text-zinc-350 [&_blockquote]:[font-size:calc(var(--responsive-font-size,16px)*1.125)] [&_blockquote]:[line-height:var(--editor-line-height,1.6)]
                       [&_.callout-box]:[font-size:var(--responsive-font-size,16px)] [&_.callout-box]:[line-height:var(--editor-line-height,1.6)]
-                      
                       [&_mark]:px-1 [&_mark]:py-0.5 [&_mark]:rounded-md
-                      
                       [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-5 [&_ul]:space-y-1
                       [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-5 [&_ol]:space-y-1
                       [&_li]:text-zinc-800 [&_li]:dark:text-zinc-350 [&_li]:[font-size:var(--responsive-font-size,16px)] [&_li]:[line-height:var(--editor-line-height,1.6)]
-                      
                       [&_a]:text-blue-500 [&_a]:hover:text-blue-600 [&_a]:underline [&_a]:transition-colors
-                      
                       [&_code]:bg-zinc-100 [&_code]:dark:bg-zinc-900 [&_code]:text-red-500 [&_code]:dark:text-red-400 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono [&_code]:text-sm
-                      
                       [&_img]:rounded-lg [&_img]:border [&_img]:border-zinc-200 [&_img]:dark:border-zinc-800 [&_img]:my-6
                       [&_img[data-alignment='left']]:float-left 
                       [&_img[data-alignment='left']]:mr-6 
@@ -1173,7 +1139,6 @@ function RichEditorPageContent() {
                       [&_img[data-alignment='center']]:my-6
                       [&_img[data-alignment='center']]:float-none
                       [&_img[data-alignment='center']]:clear-both
-                      
                       [&_div[data-custom-video]]:my-6
                       [&_div[data-custom-video][data-alignment='left']]:float-left
                       [&_div[data-custom-video][data-alignment='left']]:mr-6
@@ -1191,7 +1156,6 @@ function RichEditorPageContent() {
                     {renderContentWithCodeBlocks(content)}
                   </div>
 
-                  {/* Footer buffer to clear floats in preview */}
                   <div className="clear-both pt-8 mt-8 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-400 text-center font-mono">
                     -- End of Preview Document --
                   </div>

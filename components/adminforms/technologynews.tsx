@@ -15,22 +15,12 @@ import {
     CardTitle,
 } from "../ui/card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MediaPicker } from "@/components/ui/media-picker";
 
 export const TechnologySchema = z.object({
     title: z.string().min(3, "Title is required"),
-
-    image: z.string().url("Enter a valid image URL"),
-
-
-
-
-
-
-
+    image: z.string().min(1, "Image is required"),
     href: z.string().min(1, "Href is required"),
-
-
-
     isActive: z.boolean(),
 });
 
@@ -58,18 +48,7 @@ export default function TechnologyNewsForm() {
 
     const isActive = watch("isActive");
 
-
-
-
-
-
-
-
-
-
-    const createTechnologyNews = async (
-        data: TechnologyValues
-    ) => {
+    const createTechnologyNews = async (data: TechnologyValues) => {
         const response = await fetch("/api/technologynews", {
             method: "POST",
             headers: {
@@ -79,67 +58,48 @@ export default function TechnologyNewsForm() {
         });
 
         if (!response.ok) {
-            throw new Error("Failed to create Technology news");
+            throw new Error("Failed to create Technology News");
         }
 
         return response.json();
     };
 
-
-
-
     const mutation = useMutation({
         mutationFn: createTechnologyNews,
-
         onSuccess: (data) => {
-            console.log(data);
             queryClient.invalidateQueries();
             alert("Technology news created successfully");
         },
-
         onError: (error) => {
             console.error(error);
-            alert("Failed to create Trending news");
+            alert("Failed to create technology news");
         },
     });
 
-
-
-
-
-    const onSubmit = async (
-        values: TechnologyValues
-    ) => {
+    const onSubmit = async (values: TechnologyValues) => {
         mutation.mutate(values);
     };
-
-
-
-
-
 
     return (
         <Card className="max-w-3xl">
             <CardHeader>
-                <CardTitle>Create Slide</CardTitle>
+                <CardTitle>Create Technology News</CardTitle>
             </CardHeader>
 
             <CardContent>
                 <form
                     onSubmit={handleSubmit(onSubmit)}
-                    className="space-y-5"
+                    className="space-y-6"
                 >
                     {/* Title */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
                             Title
                         </label>
-
                         <Input
-                            placeholder="Latest Government Jobs"
+                            placeholder="Technology News Title"
                             {...register("title")}
                         />
-
                         {errors.title && (
                             <p className="text-sm text-red-500">
                                 {errors.title.message}
@@ -147,17 +107,16 @@ export default function TechnologyNewsForm() {
                         )}
                     </div>
 
-                    {/* Image */}
+                    {/* Image Picker */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                            Image URL
-                        </label>
-
-                        <Input
-                            placeholder="https://example.com/image.jpg"
-                            {...register("image")}
+                        <MediaPicker
+                            label="IMAGE (.WEBP)"
+                            type="image"
+                            value={watch("image")}
+                            onChange={(url) => setValue("image", url, { shouldValidate: true })}
+                            placeholder="Click or drag technology news image (Auto-converted to .WebP)"
+                            helperText="Images are automatically converted to .WebP."
                         />
-
                         {errors.image && (
                             <p className="text-sm text-red-500">
                                 {errors.image.message}
@@ -165,29 +124,15 @@ export default function TechnologyNewsForm() {
                         )}
                     </div>
 
-
-
-                    {/* Date */}
-
-
-
-
-
-
-                    {/* Author */}
-
-
                     {/* Link */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
                             Link
                         </label>
-
                         <Input
-                            placeholder="/jobs/latest"
+                            placeholder="/news/tech"
                             {...register("href")}
                         />
-
                         {errors.href && (
                             <p className="text-sm text-red-500">
                                 {errors.href.message}
@@ -195,35 +140,32 @@ export default function TechnologyNewsForm() {
                         )}
                     </div>
 
-
-
-
                     {/* Active Switch */}
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div>
                             <p className="font-medium">
-                                Active Slide
+                                Active Item
                             </p>
-
                             <p className="text-sm text-muted-foreground">
-                                Show this slide on homepage
+                                Show this technology news item on homepage
                             </p>
                         </div>
 
                         <Switch
                             checked={isActive}
-                            onCheckedChange={(checked: boolean) =>
-                                setValue("isActive", checked)
+                            onCheckedChange={(val) =>
+                                setValue("isActive", val)
                             }
                         />
                     </div>
 
+                    {/* Submit Button */}
                     <Button
                         type="submit"
                         disabled={mutation.isPending}
                         className="w-full"
                     >
-                        {mutation.isPending ? "Creating ..." : "Create "}
+                        {mutation.isPending ? "Creating..." : "Create Technology News"}
                     </Button>
                 </form>
             </CardContent>

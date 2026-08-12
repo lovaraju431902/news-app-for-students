@@ -13,7 +13,7 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     if (state?.success) {
-      router.push("/admin-8ondZIwIj0VRE8P8spYRLkloy4BjQDAtCm3vWacc7sE");
+      router.push("/admin");
       router.refresh();
     }
   }, [state, router]);
@@ -55,7 +55,7 @@ export default function AdminLoginPage() {
                 Admin Authentication
               </h1>
               <p className="text-xs text-zinc-400 mt-1">
-                Enter your credentials to access the Content Control
+                Enter your credentials to access the Students Voice Admin Control
               </p>
             </div>
           </div>
@@ -74,7 +74,7 @@ export default function AdminLoginPage() {
             {state?.success && (
               <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-xs text-emerald-400">
                 <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                <span>Redirecting to NewsRoom Admin...</span>
+                <span>Redirecting to Admin Dashboard...</span>
               </div>
             )}
 
@@ -118,7 +118,7 @@ export default function AdminLoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-350 p-1 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 p-1 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>

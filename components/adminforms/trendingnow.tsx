@@ -15,22 +15,17 @@ import {
     CardTitle,
 } from "../ui/card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MediaPicker } from "@/components/ui/media-picker";
+import {
+    getDefaultISODate,
+    formatDateStringToReadable,
+} from "./form-helpers";
 
 export const TrendingNowSchema = z.object({
     title: z.string().min(3, "Title is required"),
-
-    image: z.string().url("Enter a valid image URL"),
-
-
-
+    image: z.string().min(1, "Image is required"),
     date: z.string().min(1, "Date is required"),
-
-
-
     href: z.string().min(1, "Href is required"),
-
-
-
     isActive: z.boolean(),
 });
 
@@ -51,35 +46,26 @@ export default function TrendingnewsForm() {
         defaultValues: {
             title: "",
             image: "",
-
-            date: "",
-
+            date: getDefaultISODate(),
             href: "",
-
             isActive: false,
         },
     });
 
     const isActive = watch("isActive");
 
+    const createTrendingNews = async (data: TrendingFormValues) => {
+        const payload = {
+            ...data,
+            date: formatDateStringToReadable(data.date),
+        };
 
-
-
-
-
-
-
-
-
-    const createTrendingNews = async (
-        data: TrendingFormValues
-    ) => {
         const response = await fetch("/api/trendingnews", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
@@ -89,61 +75,42 @@ export default function TrendingnewsForm() {
         return response.json();
     };
 
-
-
-
     const mutation = useMutation({
         mutationFn: createTrendingNews,
-
         onSuccess: (data) => {
-            console.log(data);
             queryClient.invalidateQueries();
-            alert("Trending news created successfully");
+            alert("Trending News created successfully");
         },
-
         onError: (error) => {
             console.error(error);
-            alert("Failed to create Trending news");
+            alert("Failed to create Trending News");
         },
     });
 
-
-
-
-
-    const onSubmit = async (
-        values: TrendingFormValues
-    ) => {
+    const onSubmit = async (values: TrendingFormValues) => {
         mutation.mutate(values);
     };
-
-
-
-
-
 
     return (
         <Card className="max-w-3xl">
             <CardHeader>
-                <CardTitle>Create Slide</CardTitle>
+                <CardTitle>Create Trending News</CardTitle>
             </CardHeader>
 
             <CardContent>
                 <form
                     onSubmit={handleSubmit(onSubmit)}
-                    className="space-y-5"
+                    className="space-y-6"
                 >
                     {/* Title */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
                             Title
                         </label>
-
                         <Input
-                            placeholder="Latest Government Jobs"
+                            placeholder="Trending News Headline"
                             {...register("title")}
                         />
-
                         {errors.title && (
                             <p className="text-sm text-red-500">
                                 {errors.title.message}
@@ -151,17 +118,16 @@ export default function TrendingnewsForm() {
                         )}
                     </div>
 
-                    {/* Image */}
+                    {/* Image / Cover Picker */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                            Image URL
-                        </label>
-
-                        <Input
-                            placeholder="https://example.com/image.jpg"
-                            {...register("image")}
+                        <MediaPicker
+                            label="IMAGE (.WEBP)"
+                            type="image"
+                            value={watch("image")}
+                            onChange={(url) => setValue("image", url, { shouldValidate: true })}
+                            placeholder="Click or drag image (Auto-converted to .WebP)"
+                            helperText="Images are automatically converted to .WebP."
                         />
-
                         {errors.image && (
                             <p className="text-sm text-red-500">
                                 {errors.image.message}
@@ -169,19 +135,15 @@ export default function TrendingnewsForm() {
                         )}
                     </div>
 
-
-
-                    {/* Date */}
+                    {/* Date Picker */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
-                            Date
+                            Date Picker
                         </label>
-
                         <Input
-                            placeholder="Jun 10, 2026"
+                            type="date"
                             {...register("date")}
                         />
-
                         {errors.date && (
                             <p className="text-sm text-red-500">
                                 {errors.date.message}
@@ -189,24 +151,15 @@ export default function TrendingnewsForm() {
                         )}
                     </div>
 
-
-
-
-
-                    {/* Author */}
-
-
                     {/* Link */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
                             Link
                         </label>
-
                         <Input
-                            placeholder="/jobs/latest"
+                            placeholder="/news/trending"
                             {...register("href")}
                         />
-
                         {errors.href && (
                             <p className="text-sm text-red-500">
                                 {errors.href.message}
@@ -214,35 +167,32 @@ export default function TrendingnewsForm() {
                         )}
                     </div>
 
-
-
-
                     {/* Active Switch */}
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div>
                             <p className="font-medium">
-                                Active Slide
+                                Active Item
                             </p>
-
                             <p className="text-sm text-muted-foreground">
-                                Show this slide on homepage
+                                Show this trending news item on homepage
                             </p>
                         </div>
 
                         <Switch
                             checked={isActive}
-                            onCheckedChange={(checked: boolean) =>
-                                setValue("isActive", checked)
+                            onCheckedChange={(val) =>
+                                setValue("isActive", val)
                             }
                         />
                     </div>
 
+                    {/* Submit Button */}
                     <Button
                         type="submit"
                         disabled={mutation.isPending}
                         className="w-full"
                     >
-                        {mutation.isPending ? "Creating ..." : "Create "}
+                        {mutation.isPending ? "Creating..." : "Create Trending News"}
                     </Button>
                 </form>
             </CardContent>

@@ -1,97 +1,102 @@
-# Droplet Deployment Guide
+# Single Droplet Production Deployment Guide
 
-## Purpose
-This guide walks through step-by-step instructions on deploying the NewsRoom application container stack onto a single DigitalOcean Droplet running **Ubuntu 24.04**.
-
----
-
-## Droplet Provisioning Settings
-
-### 1. Specs Recommendation
-*   **OS**: Ubuntu 24.04 LTS (x64)
-*   **CPU/RAM**: Basic Droplet - 1 vCPU, 1 GB RAM, 25 GB SSD (Minimum) or 2 GB RAM (Recommended for faster builds).
-*   **Firewall**: Expose Ports:
-    *   `22` (SSH)
-    *   `80` (HTTP)
-    *   `443` (HTTPS)
+## 1. Purpose
+This document provides step-by-step instructions for deploying and operating the News application on a single DigitalOcean Droplet running **Ubuntu 24.04 LTS**.
 
 ---
 
-## Installation Commands
+## 2. Server Preparation
 
-Execute the following commands on the Droplet host after connecting via SSH:
+### 2.1 Droplet Provisioning
+- **OS:** Ubuntu 24.04 x64
+- **Recommended Size:** Basic Droplet (2GB RAM / 1 vCPU / 50GB NVMe SSD minimum, 4GB RAM recommended for production traffic)
+- **Region:** Closest to target audience (e.g., BLR1 or SGP1)
 
-### 1. Install Docker Engine & Compose Plugin
+### 2.2 Initial Server Hardening & Swap Setup
+Connect via SSH and configure a 2GB swap file to prevent out-of-memory spikes during builds:
 ```bash
-# Update package database
-sudo apt update
-
-# Install prerequisites
-sudo apt install -y apt-transport-https ca-certificates curl software-properties-common gnupg lsb-release
-
-# Add Docker's official GPG key
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-
-# Set up stable repository
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Install Docker
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-# Verify installation
-docker compose version
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 ```
 
-### 2. Configure Permissions (Optional but Recommended)
-Enables executing scripts without typing `sudo` on every Docker invocation:
+### 2.3 Install Docker & Docker Compose
 ```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl ufw git ca-certificates
+
+# Install Docker Engine
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
 sudo usermod -aG docker $USER
-newgrp docker
+```
+
+### 2.4 Firewall Configuration (UFW)
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp comment 'SSH'
+sudo ufw allow 80/tcp comment 'HTTP'
+sudo ufw allow 443/tcp comment 'HTTPS'
+sudo ufw enable
 ```
 
 ---
 
-## Application Setup
+## 3. Application Deployment Workflow
 
-### 1. Clone Project and Configure Settings
+### 3.1 Clone Repository
 ```bash
-# Clone the repository onto the droplet
-git clone <repository_url> /var/www/news-website
+git clone <YOUR_GIT_REPOSITORY_URL> /var/www/news-website
 cd /var/www/news-website
+```
 
-# Copy environment template
+### 3.2 Configure Environment Variables
+```bash
 cp .env.example .env
-
-# Edit and fill in production secrets
 nano .env
 ```
+Ensure strong passwords for `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `MEILI_MASTER_KEY`, and `SESSION_SECRET`.
 
-### 2. Startup Stack
-Make helper scripts executable and boot the stack:
+### 3.3 Launch Production Stack
 ```bash
 chmod +x scripts/*.sh
-
-# Run start script (this will build Next.js and boot up the containers)
 ./scripts/start.sh
 ```
 
+### 3.4 Database Migrations
+Run Prisma migrations to create the database schema:
+```bash
+./scripts/prisma_migrate.sh
+```
+
 ---
 
-## Troubleshooting
-*   **Out of Memory during Build**: Next.js builds on low-spec droplets (1GB RAM) may crash with compilation memory constraints. If this occurs, enable swap space on the droplet:
-    ```bash
-    sudo fallocate -l 2G /swapfile
-    sudo chmod 600 /swapfile
-    sudo mkswap /swapfile
-    sudo swapon /swapfile
-    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-    ```
-*   **Connection Refused**: Check that the host firewall (`ufw`) is not blocking HTTP/HTTPS requests.
-    ```bash
-    sudo ufw allow 80/tcp
-    sudo ufw allow 443/tcp
-    ```
+## 4. Verification & Diagnostics
+Run the health check suite:
+```bash
+./scripts/health_check.sh
+```
+
+Inspect container status:
+```bash
+docker compose ps
+```
+
+---
+
+## 5. Troubleshooting
+
+| Symptom | Cause | Solution |
+| :--- | :--- | :--- |
+| `502 Bad Gateway` | Next.js container still building or crashed | Run `docker compose logs nextjs` to inspect startup errors |
+| Database connection error | PostgreSQL container not ready or bad password | Check `.env` matches between services, run `docker compose logs postgres` |
+| Droplet becomes unresponsive | Out of memory | Verify swap is active (`free -m`) and check Docker memory limits in `docker-compose.prod.yml` |
+
+---
+
+## 6. Migration Path
+- **Zero-Downtime Blue-Green Deployment:** Transition to a rolling update pattern using Docker Compose `--scale` or an external proxy like Traefik/Caddy.
+- **CI/CD Pipeline:** Implement GitHub Actions to SSH into the Droplet, pull updates, run migrations, and reload containers automatically.

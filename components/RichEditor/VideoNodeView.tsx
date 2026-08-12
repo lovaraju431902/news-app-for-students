@@ -68,6 +68,9 @@ export default function VideoNodeView({
       ? "aspect-[9/16] w-full max-w-[280px] mx-auto"
       : "aspect-video w-full";
 
+  const embedInfo = getEmbedUrl(src);
+  const displayPoster = thumbnail || embedInfo.poster;
+
   return (
     <NodeViewWrapper
       style={wrapperStyle}
@@ -80,41 +83,36 @@ export default function VideoNodeView({
         {/* Render actual video/embed or thumbnail cover preview */}
         <div className={`relative ${aspectClass} overflow-hidden bg-black flex items-center justify-center`}>
           {isPlaying ? (
-            (() => {
-              const { type, url } = getEmbedUrl(src);
-              if (type === "embed") {
-                return (
-                  <iframe
-                    src={`${url}?autoplay=1`}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full object-contain rounded-lg border-0 bg-black"
-                  />
-                );
-              }
-              return (
-                <video
-                  src={src}
-                  poster={thumbnail}
-                  controls
-                  autoPlay
-                  className="w-full h-full object-contain rounded-lg"
-                />
-              );
-            })()
+            embedInfo.type === "embed" ? (
+              <iframe
+                src={`${embedInfo.url}?autoplay=1`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full object-contain rounded-lg border-0 bg-black"
+              />
+            ) : (
+              <video
+                src={src}
+                poster={thumbnail}
+                controls
+                autoPlay
+                className="w-full h-full object-contain rounded-lg"
+              />
+            )
           ) : (
             <div
               onClick={() => setIsPlaying(true)}
               className="relative w-full h-full flex items-center justify-center bg-zinc-900/60 cursor-pointer group/video"
             >
-              {thumbnail ? (
+              {displayPoster ? (
                 <Image
-                  src={thumbnail}
+                  src={displayPoster}
                   alt="Video thumbnail"
                   fill
                   className="object-cover opacity-70 group-hover/video:scale-105 transition-transform duration-500"
                   sizes="(max-width: 768px) 100vw, 800px"
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full bg-zinc-900 flex flex-col items-center justify-center text-zinc-650 gap-2">
@@ -125,7 +123,7 @@ export default function VideoNodeView({
 
               {/* Play Button Overlay */}
               <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/video:bg-black/35 transition-colors duration-200">
-                <div className="w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center shadow-xl transition-all duration-300 transform scale-90 group-hover/video:scale-100">
+                <div className="w-14 h-14 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-xl transition-all duration-300 transform scale-90 group-hover/video:scale-100">
                   <Play className="w-6 h-6 fill-current ml-1" />
                 </div>
               </div>

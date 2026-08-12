@@ -15,6 +15,7 @@ import {
     CardTitle,
 } from "../ui/card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MediaPicker } from "@/components/ui/media-picker";
 
 export const WebStorySchema = z.object({
     title: z.string().min(3, "Title is required"),
@@ -27,6 +28,8 @@ export type WebStoryFormValues = z.infer<typeof WebStorySchema>;
 
 export default function WebStoryForm() {
     const queryClient = useQueryClient();
+    const [loading, setLoading] = useState(false);
+
     const {
         register,
         handleSubmit,
@@ -37,16 +40,13 @@ export default function WebStoryForm() {
         resolver: zodResolver(WebStorySchema),
         defaultValues: {
             title: "",
-
             image: "",
-
             href: "",
             isActive: false,
         },
     });
 
     const isActive = watch("isActive");
-
 
     const createWebStory = async (data: WebStoryFormValues) => {
         const response = await fetch("/api/webstories", {
@@ -66,7 +66,7 @@ export default function WebStoryForm() {
 
     const mutation = useMutation({
         mutationFn: createWebStory,
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries();
             alert("Web Story created successfully");
         },
@@ -85,70 +85,87 @@ export default function WebStoryForm() {
             <CardHeader>
                 <CardTitle>Create Web Story</CardTitle>
             </CardHeader>
+
             <CardContent>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <form
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="space-y-6"
+                >
                     {/* Title */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Title</label>
+                        <label className="text-sm font-medium">
+                            Title
+                        </label>
                         <Input
-                            placeholder="Enter Web Story Title"
+                            placeholder="Web Story Title"
                             {...register("title")}
                         />
                         {errors.title && (
-                            <p className="text-sm text-red-500">{errors.title.message}</p>
+                            <p className="text-sm text-red-500">
+                                {errors.title.message}
+                            </p>
                         )}
                     </div>
 
-
-
-                    {/* Link */}
+                    {/* Image / Story Cover Picker */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Imageurl</label>
-                        <Input
-                            placeholder="/imageurl"
-                            {...register("image")}
+                        <MediaPicker
+                            label="STORY COVER IMAGE (.WEBP)"
+                            type="image"
+                            value={watch("image")}
+                            onChange={(url) => setValue("image", url, { shouldValidate: true })}
+                            placeholder="Click or drag story image (Auto-converted to .WebP)"
+                            helperText="Images are automatically converted to .WebP."
                         />
                         {errors.image && (
-                            <p className="text-sm text-red-500">{errors.image.message}</p>
+                            <p className="text-sm text-red-500">
+                                {errors.image.message}
+                            </p>
                         )}
                     </div>
 
-
-
                     {/* Link */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Link</label>
+                        <label className="text-sm font-medium">
+                            Link
+                        </label>
                         <Input
-                            placeholder="/stories/1"
+                            placeholder="/stories/latest"
                             {...register("href")}
                         />
                         {errors.href && (
-                            <p className="text-sm text-red-500">{errors.href.message}</p>
+                            <p className="text-sm text-red-500">
+                                {errors.href.message}
+                            </p>
                         )}
                     </div>
 
                     {/* Active Switch */}
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div>
-                            <p className="font-medium">Active Web Story</p>
+                            <p className="font-medium">
+                                Active Story
+                            </p>
                             <p className="text-sm text-muted-foreground">
-                                Show this story on the homepage
+                                Show this web story on homepage
                             </p>
                         </div>
+
                         <Switch
                             checked={isActive}
-                            onCheckedChange={(checked: boolean) =>
-                                setValue("isActive", checked)
+                            onCheckedChange={(val) =>
+                                setValue("isActive", val)
                             }
                         />
                     </div>
 
+                    {/* Submit Button */}
                     <Button
                         type="submit"
                         disabled={mutation.isPending}
                         className="w-full"
                     >
-                        {mutation.isPending ? "Creating Web Story..." : "Create Web Story"}
+                        {mutation.isPending ? "Creating..." : "Create Web Story"}
                     </Button>
                 </form>
             </CardContent>

@@ -1,43 +1,74 @@
-# Cloudflare CDN & DNS Configuration Guide
+# Cloudflare CDN & Edge Proxy Setup Guide
 
-## Purpose
-This document provides recommendations and recommended practices for configuring Cloudflare to protect and accelerate the NewsRoom platform.
-
----
-
-## Caching & DNS Rules
-
-### 1. DNS Configuration
-Point your domain names to the DigitalOcean Droplet IP address:
-*   **A Record**: `@` pointing to Droplet Public IP (Proxy Status: `Proxied`).
-*   **CNAME Record**: `www` pointing to `@` (Proxy Status: `Proxied`).
-
-### 2. SSL/TLS Mode
-Under the Cloudflare Dashboard -> **SSL/TLS**:
-*   **Recommended Setting**: **Full (Strict)**.
-    *   This requires importing TLS/SSL certificates (e.g. Let's Encrypt or Cloudflare Origin certificates) onto your droplet inside `./docker/nginx/certs`. Nginx is configured to serve strict TLS on port `443` (8443 internally).
-*   **Alternative Setting**: **Flexible**.
-    *   Traffic is encrypted between clients and Cloudflare, but clear text is sent from Cloudflare to your droplet on port `80` (8080 internally). This is easier to set up initially as it does not require installing certificates on your Nginx container, but is less secure.
+## 1. Purpose
+This document provides recommended configurations for routing production traffic through Cloudflare's Free CDN and WAF tier to front the DigitalOcean Droplet.
 
 ---
 
-## Optimization Rules
+## 2. Configuration Settings
 
-### 1. Speed and Auto Minify
-Under **Speed** -> **Optimization**:
-*   **Brotli**: Enforce **On**. Cloudflare will automatically apply Brotli compression on HTTP payloads even if the Nginx origin only has Gzip enabled.
-*   **Auto Minify**: Check **JavaScript**, **CSS**, and **HTML** options to optimize asset delivery speeds.
+### 2.1 DNS Setup
+1. Add an **A Record**:
+   - **Name:** `@` (or subdomain like `news`)
+   - **IPv4 Address:** `<DIGITALOCEAN_DROPLET_PUBLIC_IP>`
+   - **Proxy Status:** `Proxied` (Orange Cloud enabled)
+2. Add a **CNAME Record**:
+   - **Name:** `www`
+   - **Target:** `@`
+   - **Proxy Status:** `Proxied`
 
-### 2. Cache Rules
-Under **Caching** -> **Cache Rules**, create a custom rule to ensure Next.js static assets are cached at Cloudflare edge locations:
-*   **Rule Name**: `Cache Static Assets`
-*   **Expression**: `(http.request.uri.path starts_with "/_next/static/") or (http.request.uri.path.extension in {"css", "js", "ico", "png", "jpg", "jpeg", "svg", "woff", "woff2"})`
-*   **Settings**: Cache eligibility set to **Eligible for cache**, Edge TTL set to **Respect origin headers** or **Override to 1 month**.
+### 2.2 SSL/TLS Configuration
+- **SSL/TLS Encryption Mode:** Set to **`Full`** or **`Full (Strict)`** (if using a Cloudflare Origin Certificate on Nginx).
+- **Always Use HTTPS:** `ON`
+- **Minimum TLS Version:** `TLS 1.2`
+- **Opportunistic Encryption:** `ON`
+
+### 2.3 Caching & Speed Optimizations
+- **Brotli Compression:** `ON`
+- **Early Hints:** `ON`
+- **Auto Minify:** JS, CSS, HTML
+- **Browser Cache TTL:** `Respect Existing Headers` (Nginx sends proper max-age for Next.js assets).
+
+### 2.4 Recommended Cache Rules
+1. **Rule 1 - Next.js Static Assets:**
+   - **Matching Criteria:** `URI Path starts with "/_next/static/"`
+   - **Cache Eligibility:** `Cache Everything`
+   - **Edge TTL:** `1 month`
+   - **Browser TTL:** `1 year`
+2. **Rule 2 - Admin / Dynamic Routes Bypass:**
+   - **Matching Criteria:** `URI Path starts with "/admin" OR URI Path starts with "/api"`
+   - **Cache Eligibility:** `Bypass Cache`
+
+### 2.5 Security & WAF Rules
+- **Security Level:** `Medium`
+- **Bot Fight Mode:** `ON`
+- **Challenge Bad Bots:** Enabled
 
 ---
 
-## Security (WAF Rules)
-Under **Security** -> **WAF**, activate:
-1.  **Bot Fight Mode**: Enable to block malicious scrapers.
-2.  **Rate Limiting**: Add rules matching `/api/` paths if necessary (though our Nginx layer already handles local rate limiting).
-3.  **Country Blocking**: (Optional) Block countries that are not part of your target reader audience to reduce server load.
+## 3. Commands & Verification
+
+### Test Cloudflare Edge Caching Response
+```bash
+curl -I https://yourdomain.com/_next/static/chunks/main.js
+# Look for headers:
+# cf-cache-status: HIT
+# server: cloudflare
+```
+
+---
+
+## 4. Troubleshooting
+
+### "Redirect Loop (ERR_TOO_MANY_REDIRECTS)"
+- **Cause:** Cloudflare SSL mode set to `Flexible` while Nginx enforces HTTPS redirect.
+- **Solution:** Change Cloudflare SSL mode to **`Full`** or **`Full (Strict)`**.
+
+### Admin Login or Dynamic Pages Showing Stale Data
+- **Cause:** Overly aggressive edge caching rule matching dynamic routes.
+- **Solution:** Ensure Cache Bypass rule is placed at the top for `/admin*` and `/api*`.
+
+---
+
+## 5. Migration Path
+- Easily upgrade to Cloudflare Pro or Enterprise for Image Optimization (Cloudflare Polish), custom WAF rulesets, and zero-trust Cloudflare Access tunnels.
