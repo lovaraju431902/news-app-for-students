@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url)
+        const limitParam = searchParams.get("limit")
+        const limit = limitParam ? parseInt(limitParam) : undefined
+
         const result = await prisma.webStory.findMany({
             where: {
                 isActive: true,
@@ -11,7 +15,7 @@ export async function GET(request: Request) {
             orderBy: {
                 createdAt: "desc",
             },
-            take: 4
+            ...(limit ? { take: limit } : {})
         })
         return NextResponse.json({ data: result }, { status: 200 })
     } catch (error) {
@@ -27,6 +31,7 @@ export async function POST(request: Request) {
             data: {
                 title: body.title,
                 image: body.image || null,
+                video: body.video || null,
                 isActive: body.isActive,
                 href: body.href || null
             }

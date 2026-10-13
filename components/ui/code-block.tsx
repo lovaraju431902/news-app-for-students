@@ -2,11 +2,7 @@ import {
     Check,
     Copy,
     Download,
-    FileCode,
-    Maximize2,
-    Minimize2,
     Terminal,
-    WrapText,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Highlight, type Language, themes } from "prism-react-renderer";
@@ -478,53 +474,10 @@ const CodeBlock = React.forwardRef<HTMLDivElement, CodeBlockProps>(
                             <div className="h-3 w-3 rounded-full bg-green-500/80 transition-colors hover:bg-green-500" />
                         </div>
 
-                        {/* Title or language */}
-                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                            {variant === "terminal" ? (
-                                <Terminal className="h-4 w-4" />
-                            ) : (
-                                <FileCode className="h-4 w-4" />
-                            )}
-                            <span className="font-medium">
-                                {title || (showLanguage && getLanguageDisplayName(language))}
-                            </span>
-                        </div>
                     </div>
 
                     {/* Action buttons */}
                     <div className="flex items-center gap-1">
-                        {/* Word wrap toggle */}
-                        <motion.button
-                            onClick={() => setWordWrap(!wordWrap)}
-                            className={cn(
-                                "rounded-md p-2 transition-colors hover:bg-muted",
-                                wordWrap
-                                    ? "text-primary"
-                                    : "text-muted-foreground hover:text-foreground",
-                            )}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            aria-label="Toggle word wrap"
-                            title="Toggle word wrap"
-                        >
-                            <WrapText className="h-4 w-4" />
-                        </motion.button>
-
-                        {/* Expand toggle */}
-                        <motion.button
-                            onClick={() => setIsExpanded(!isExpanded)}
-                            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            aria-label={isExpanded ? "Minimize" : "Maximize"}
-                            title={isExpanded ? "Minimize" : "Maximize"}
-                        >
-                            {isExpanded ? (
-                                <Minimize2 className="h-4 w-4" />
-                            ) : (
-                                <Maximize2 className="h-4 w-4" />
-                            )}
-                        </motion.button>
 
                         {/* Download button */}
                         {downloadable && (

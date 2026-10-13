@@ -21,6 +21,15 @@ fi
 echo "🚀 Deploying containers in detached mode..."
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
+echo "🗄️ Synchronizing Prisma Database Schema..."
+docker compose exec -T nextjs npx prisma db push --accept-data-loss || true
+
+echo "👥 Seeding Author Profile Images..."
+docker compose exec -T nextjs node scripts/seed_authors.js || true
+
+echo "📝 Seeding 30 Starter Blogs & Categories..."
+docker compose exec -T nextjs node scripts/seed_data.js || true
+
 echo "=========================================================="
 echo "✅ Docker stack started successfully!"
 echo "Run './scripts/health_check.sh' to inspect container health."

@@ -174,12 +174,30 @@ export const Callout = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
+    const color = HTMLAttributes["data-color"] || "green";
+    const isHex = color.startsWith("#") || color.startsWith("rgb") || color.startsWith("hsl");
+
+    let extraAttributes: Record<string, string> = {};
+    if (isHex) {
+      let bgColor = color;
+      if (color.startsWith("#")) {
+        if (color.length === 7) {
+          bgColor = `${color}12`; // ~7% opacity using hex alpha
+        } else if (color.length === 4) {
+          bgColor = `${color}1`; // ~6% opacity
+        }
+      }
+      extraAttributes = {
+        style: `border-color: ${color}; background-color: ${bgColor};`,
+      };
+    }
+
     return [
       "div",
       mergeAttributes(HTMLAttributes, {
         "data-type": "callout",
         class: "callout-box",
-      }),
+      }, extraAttributes),
       0,
     ];
   },
@@ -333,6 +351,7 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const [showColorBoxPicker, setShowColorBoxPicker] = useState(false);
+  const [customBoxColor, setCustomBoxColor] = useState("#3b82f6");
 
   const TEXT_COLORS = [
     { name: "Default", value: "" },
@@ -923,6 +942,38 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
                     className="w-6 h-6 rounded-md border border-zinc-800 dark:border-zinc-400 bg-[#f8fafc] dark:bg-zinc-800 hover:scale-110 active:scale-95 transition-transform cursor-pointer"
                     title="Black/Grey Box"
                   />
+                </div>
+                <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-2 mt-1 flex flex-col gap-1.5">
+                  <span className="text-[9px] uppercase font-bold text-zinc-400 dark:text-zinc-500 px-1 font-sans">Custom Color</span>
+                  <div className="flex items-center gap-1.5 px-1">
+                    <div className="relative w-6 h-6 rounded-md border border-zinc-300 dark:border-zinc-700 overflow-hidden cursor-pointer flex-shrink-0">
+                      <input
+                        type="color"
+                        value={customBoxColor}
+                        onChange={(e) => setCustomBoxColor(e.target.value)}
+                        className="absolute inset-[-4px] w-[32px] h-[32px] cursor-pointer p-0 border-0"
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={customBoxColor}
+                      onChange={(e) => setCustomBoxColor(e.target.value)}
+                      placeholder="#3b82f6"
+                      className="w-16 h-6 text-[10px] px-1 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-blue-500 font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (customBoxColor.startsWith("#")) {
+                          editor.chain().focus().toggleCallout({ color: customBoxColor }).run();
+                          setShowColorBoxPicker(false);
+                        }
+                      }}
+                      className="h-6 px-1.5 text-[9px] font-bold uppercase rounded bg-blue-500 hover:bg-blue-600 active:scale-95 text-white transition-all cursor-pointer flex items-center justify-center"
+                    >
+                      Apply
+                    </button>
+                  </div>
                 </div>
                 {editor.isActive("callout") && (
                   <button

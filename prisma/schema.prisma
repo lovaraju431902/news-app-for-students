@@ -155,6 +155,7 @@ model WebStory {
   id        String   @id @default(cuid())
   title     String
   image     String?
+  video     String?
   isActive  Boolean  @default(false)
   href      String?
   createdAt DateTime @default(now())
@@ -239,4 +240,37 @@ model MaterialFile {
 
   @@index([isActive, createdAt(sort: Desc)])
 }
+
+model SiteSetting {
+  id                      String   @id @default("default")
+  siteName                String   @default("Students Hub")
+  siteTagline             String   @default("Learn • Grow • Build a Better Future")
+  siteLogo                String   @default("/logo.png")
+  siteFavicon             String   @default("/logo.png")
+  supportEmail            String   @default("support@studentsvoice.in")
+  contactPhone            String   @default("+91 98765 43210")
+  contactAddress          String   @default("Hyderabad, Telangana, India")
+  workingHours            String   @default("Mon - Sat: 9:00 AM - 6:00 PM IST")
+  adminEmail              String   @default("admin@gmail.com")
+  adminPassword           String   @default("admin123")
+  metaTitle               String   @default("Students Hub - Latest Government Jobs, Education & Career Updates")
+  metaDescription         String   @default("Get fast, reliable student news, notifications, study materials, mock tests, and career opportunities.")
+  metaKeywords            String   @default("student news, government jobs, current affairs, internships, scholarships, study materials")
+  canonicalUrl            String   @default("http://localhost")
+  ogImage                 String   @default("/logo.png")
+  twitterHandle           String   @default("@studentsvoice")
+  googleAnalyticsId       String   @default("")
+  googleSearchConsoleCode String   @default("")
+  facebook                String   @default("https://facebook.com")
+  instagram               String   @default("https://instagram.com")
+  twitter                 String   @default("https://twitter.com")
+  youtube                 String   @default("https://youtube.com")
+  telegram                String   @default("https://t.me")
+  whatsapp                String   @default("https://whatsapp.com")
+  linkedin                String   @default("https://linkedin.com")
+  github                  String   @default("https://github.com")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
 

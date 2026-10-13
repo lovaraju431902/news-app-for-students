@@ -1,16 +1,27 @@
+"use client";
+
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import Topbar from "@/components/Homescreen/topbar";
 import Header from "@/components/Homescreen/header";
 import Navbar from "@/components/Homescreen/Navbar";
 import Footer from "@/components/Homescreen/footer";
 import { GraduationCap, Users, Target, Award, CheckCircle } from "lucide-react";
 
-export const metadata = {
-  title: "About Us | Students Hub - Telugu Student News Portal",
-  description: "Learn about the mission, values, and story behind Students Hub, the premier platform for government jobs, scholarships, and academic updates in AP and Telangana.",
-};
-
 export default function AboutPage() {
+  const { data: settings } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings");
+      if (!res.ok) throw new Error("Failed to load settings");
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const siteName = settings?.general?.siteName || "Students Hub";
+  const siteTagline = settings?.general?.siteTagline || "Learn • Grow • Build a Better Future";
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
       <Topbar />
@@ -29,7 +40,7 @@ export default function AboutPage() {
               Empowering Telugu Students for Academic and Career Success
             </h1>
             <p className="mt-6 text-sm sm:text-base md:text-lg text-blue-100 max-w-2xl mx-auto font-normal leading-relaxed">
-              Connecting AP and Telangana aspirants with genuine job notifications, results updates, study materials, and career guidance in one single Hub.
+              Connecting AP and Telangana aspirants with genuine job notifications, results updates, study materials, and career guidance in one single {siteName}.
             </p>
           </div>
         </section>
@@ -41,16 +52,16 @@ export default function AboutPage() {
             {/* Left Column: Our Story */}
             <div className="lg:col-span-7 space-y-6">
               <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 border-b-2 border-red-500 pb-3 inline-block">
-                The Story Behind Students Hub
+                The Story Behind {siteName}
               </h2>
               <p className="text-sm sm:text-base leading-relaxed text-gray-600">
                 In today's fast-paced digital world, students preparing for exams or searching for careers are often overwhelmed by fake alerts, clickbaits, and disjointed information. This challenge is even greater for students in Andhra Pradesh and Telangana, who require localized updates in accessible formats.
               </p>
               <p className="text-sm sm:text-base leading-relaxed text-gray-600">
-                <strong>Students Hub (స్టూడెంట్స్ వాయిస్)</strong> was founded to resolve this problem. We are a dedicated news portal operated by educators and tech professionals with a shared vision: to curate, verify, and broadcast the most accurate academic and competitive exam news directly to Telugu students.
+                <strong>{siteName} </strong> was founded to resolve this problem. We are a dedicated news portal operated by educators and tech professionals with a shared vision: to curate, verify, and broadcast the most accurate academic and competitive exam news directly to Telugu students.
               </p>
               <p className="text-sm sm:text-base leading-relaxed text-gray-600">
-                From job alerts published by APPSC, TSPSC, and central departments to notifications from major universities and scholarship programs, we perform rigorous manual verification with official sources before publishing.
+                From job alerts published by state exams, and central departments to notifications from major universities and scholarship programs, we perform rigorous manual verification with official sources before publishing.
               </p>
             </div>
 
@@ -68,7 +79,7 @@ export default function AboutPage() {
                   <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                   <div>
                     <h4 className="text-sm font-bold text-gray-900">Job Aspirants</h4>
-                    <p className="text-xs text-gray-500 mt-0.5">Telugu youth preparing for state government services (APPSC, TSPSC), Railways, Banking, Defense, and Central Jobs.</p>
+                    <p className="text-xs text-gray-500 mt-0.5">youth preparing for state government services, Railways, Banking, Defense, and Central Jobs.</p>
                   </div>
                 </div>
 

@@ -17,7 +17,6 @@ README.md
 AGENTS.md
 CLAUDE.md
 docs/
-scripts/
 docker/
 Dockerfile
 docker-compose*.yml

@@ -16,7 +16,7 @@ if [ ! "$(docker ps -q -f name=news_nextjs)" ]; then
   exit 1
 fi
 
-docker compose exec -T nextjs npx prisma migrate deploy
+docker compose exec -T nextjs npx prisma db push --accept-data-loss
 
 echo "=========================================================="
 echo "✅ Prisma database migrations applied successfully."

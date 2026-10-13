@@ -55,6 +55,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 # Automatically leverage Next.js output file tracing to copy standalone node files
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 # Set permission for Next.js build-time prerender cache and local uploads fallback
 RUN mkdir -p .next public/uploads && chown -R nextjs:nodejs .next public/uploads

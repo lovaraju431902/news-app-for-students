@@ -40,7 +40,7 @@ export default function VideoForm() {
         defaultValues: {
             title: "",
             image: "",
-            badge: "ABN",
+            badge: "Video",
             href: "",
             isActive: false,
         },
@@ -136,9 +136,9 @@ export default function VideoForm() {
 
                     {/* Badge */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Badge (e.g. ABN, Telugu News)</label>
+                        <label className="text-sm font-medium">Badge (e.g. tech , results)</label>
                         <Input
-                            placeholder="ABN"
+                            placeholder="e.g. tech , results"
                             {...register("badge")}
                         />
                         {errors.badge && (

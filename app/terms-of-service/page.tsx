@@ -1,16 +1,26 @@
+"use client";
+
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import Topbar from "@/components/Homescreen/topbar";
 import Header from "@/components/Homescreen/header";
 import Navbar from "@/components/Homescreen/Navbar";
 import Footer from "@/components/Homescreen/footer";
 import { Scale, FileWarning, HelpCircle, AlertTriangle } from "lucide-react";
 
-export const metadata = {
-  title: "Terms of Service | Students Hub",
-  description: "Read the terms and conditions, guidelines, and disclaimers governing the use of Students Hub.",
-};
-
 export default function TermsOfServicePage() {
+  const { data: settings } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings");
+      if (!res.ok) throw new Error("Failed to load settings");
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const siteName = settings?.general?.siteName || "Students Hub";
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
       <Topbar />
@@ -25,7 +35,7 @@ export default function TermsOfServicePage() {
               Terms of Service
             </h1>
             <p className="mt-3 text-sm sm:text-base text-blue-100 max-w-xl mx-auto">
-              Please read these terms carefully before using the Students Hub news portal and services.
+              Please read these terms carefully before using the {siteName} news portal and services.
             </p>
           </div>
         </section>
@@ -38,7 +48,7 @@ export default function TermsOfServicePage() {
             <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg flex gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <div className="text-xs sm:text-sm text-amber-800">
-                <strong>IMPORTANT DISCLAIMER:</strong> Students Hub is an independent news aggregator. We are not a government entity, recruiting board, or academic board. We do not issue government jobs, intermediate results, or admit cards ourselves.
+                <strong>IMPORTANT DISCLAIMER:</strong> {siteName} is an independent news aggregator. We are not a government entity, recruiting board, or academic board. We do not issue government jobs, intermediate results, or admit cards ourselves.
               </div>
             </div>
 
@@ -49,7 +59,7 @@ export default function TermsOfServicePage() {
                 1. Acceptance of Terms
               </h2>
               <p className="text-sm sm:text-base leading-relaxed">
-                By accessing and using <strong>Students Hub</strong>, you accept and agree to be bound by the terms and conditions outlined here. If you do not agree to these terms, you should not access or use the portal.
+                By accessing and using <strong>{siteName}</strong>, you accept and agree to be bound by the terms and conditions outlined here. If you do not agree to these terms, you should not access or use the portal.
               </p>
             </div>
 
@@ -63,7 +73,7 @@ export default function TermsOfServicePage() {
                 While we make every effort to verify job advertisements, examination results, and scholarship eligibility criteria, the content is provided for informational and educational purposes only.
               </p>
               <p className="text-sm sm:text-base leading-relaxed">
-                Candidates must reference the official notification documents and consult directly with the respective recruiting commission (e.g. APPSC, TSPSC) or university board before submitting paid registrations or applications. Students Hub is not liable for any financial loss, rejected applications, or missed opportunities arising from discrepancies in our content.
+                Candidates must reference the official notification documents and consult directly with the respective recruiting commission (e.g. APPSC, TSPSC) or university board before submitting paid registrations or applications. {siteName} is not liable for any financial loss, rejected applications, or missed opportunities arising from discrepancies in our content.
               </p>
             </div>
 
@@ -90,7 +100,7 @@ export default function TermsOfServicePage() {
                 4. Intellectual Property
               </h2>
               <p className="text-sm sm:text-base leading-relaxed">
-                All editorial layouts, logo marks, custom guides, and compiled PDFs published on Students Hub are protected under copyright laws. However, official government notifications, PDF circulars, and university announcements hosted or linked on our site remain the intellectual property of their respective boards or commissions.
+                All editorial layouts, logo marks, custom guides, and compiled PDFs published on {siteName} are protected under copyright laws. However, official government notifications, PDF circulars, and university announcements hosted or linked on our site remain the intellectual property of their respective boards or commissions.
               </p>
             </div>
 

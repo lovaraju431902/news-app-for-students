@@ -1,93 +1,17 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Play } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
-
-// interface Story {
-//   id: number;
-//   image?: string;
-//   title: string;
-// }
-
-// interface Video {
-//   id: number;
-//   image: string;
-//   title: string;
-//   badge: string;
-// }
-
-// // const storiesData: Story[] = [
-// //   {
-// //     id: 1,
-// //     image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=600&auto=format&fit=crop",
-// //     title: "కాఫీ తాగడం వల్ల బెస్ట్ ప్రయోజనాలు ఇవే..",
-// //   },
-// //   {
-// //     id: 2,
-// //     image: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=600&auto=format&fit=crop",
-// //     title: "షుగర్ తగ్గించే సూపర్ చిట్కా.. పైసలతో పన...",
-// //   },
-// //   {
-// //     id: 3,
-// //     image: "https://images.unsplash.com/photo-1628771065518-0d82f1938462?q=80&w=600&auto=format&fit=crop",
-
-// //     title: "వేసవిలోనే కాదు.. పీరియడ్స్ సమయంలో...",
-// //   },
-// //   {
-// //     id: 4,
-
-// //     image: "https://images.unsplash.com/photo-1554774853-aae0a22c8aa4?q=80&w=600&auto=format&fit=crop",
-
-// //     title: "పాన్ కార్డు లేకుంటే ఈ పనులన్నీ ఆగిపోతాయి..!",
-// //   }
-// // ];
-
-// const videosData: Video[] = [
-//   {
-//     id: 1,
-//     image: "https://images.unsplash.com/photo-1618042164219-62c820f10723?q=80&w=600&auto=format&fit=crop",
-//     title: "కోటి కోట్లకు చేరువలో ఎలాన్ మస్క్..",
-//     badge: "Tech",
-//   },
-//   {
-//     id: 2,
-//     image: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?q=80&w=600&auto=format&fit=crop",
-//     title: "జగన్ క్షమాపణ చెప్పాలి: మంత్రి నిమ్మల",
-//     badge: "AI TOOLS",
-//   },
-//   {
-//     id: 3,
-//     image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=600&auto=format&fit=crop",
-//     title: "టీఎన్సీలో ముసలం.. దీదీ పై 58 మంది ఎమ్మెల్యేల తిరుగుబాటు",
-//     badge: "ABN",
-//   },
-//   {
-//     id: 4,
-//     image: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?q=80&w=600&auto=format&fit=crop",
-//     title: "బీజేపీలో ఉంటూ బీఆర్ఎస్ కోసం పనిచేస్తాడు.!",
-//     badge: "ABN",
-//   },
-//   {
-//     id: 5,
-//     image: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=600&auto=format&fit=crop",
-//     title: "జగన్ పీఏ కేఎన్ఆర్ ఆస్తుల చిట్టా..",
-//     badge: "ABN",
-//   },
-//   {
-//     id: 6,
-//     image: "https://images.unsplash.com/photo-1486016006115-74a41448aea2?q=80&w=600&auto=format&fit=crop",
-//     title: "తెలంగాణలో రాబోయే 2 రోజుల్లో భారీ వర్షాలు..!!",
-//     badge: "ABN",
-//   }
-// ];
-
+import Link from "next/link";
+import { ShortVideoCard, ShortVideoPlayerModal } from "@/components/ShortVideoComponents";
 
 
 type Webstoriesnews = {
   id: string;
   title: string;
   image: string;
-  href: string;
+  video?: string | null;
+  href?: string | null;
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -119,11 +43,11 @@ type VideosnewsResponse = {
 
 
 export default function WebStoriesAndVideos() {
-
+  const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
 
 
   const getWebstories = async (): Promise<WebstoresisResponse> => {
-    const response = await fetch("/api/webstories");
+    const response = await fetch("/api/webstories?limit=4");
 
     if (!response.ok) {
       throw new Error("Failed to fetch webstories");
@@ -139,7 +63,7 @@ export default function WebStoriesAndVideos() {
     isLoading: WebstoresisLoading,
     error: WebstoresError,
   } = useQuery({
-    queryKey: ["webstories"],
+    queryKey: ["webstories", "homepage"],
     queryFn: getWebstories,
   });
 
@@ -210,10 +134,10 @@ export default function WebStoriesAndVideos() {
               <div className="h-[1px] bg-red-700/20 flex-grow"></div>
               <div className="h-7 w-24 bg-zinc-250 dark:bg-zinc-800 rounded-full" />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex flex-col">
-                  <div className="w-full aspect-[9/14] rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
+                  <div className="w-full aspect-[9/16] rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
                   <div className="h-4 w-5/6 bg-zinc-200 dark:bg-zinc-800 rounded mt-2" />
                   <div className="h-4 w-2/3 bg-zinc-200 dark:bg-zinc-800 rounded mt-1" />
                 </div>
@@ -257,38 +181,34 @@ export default function WebStoriesAndVideos() {
       {/* Web Stories Section */}
       <section>
         <div className="flex items-center justify-between gap-4 mb-4">
-          <h2 className="text-[#b91c1c] font-extrabold text-xl whitespace-nowrap">WEB STORIES</h2>
+          <h2 className="text-[#b91c1c] font-extrabold text-xl whitespace-nowrap">SHORT VIDEOS</h2>
           <div className="h-[1px] bg-red-700/20 flex-grow"></div>
-          <a className="text-xs font-bold text-[#b91c1c] border border-red-700/20 rounded-full px-4 py-1.5 hover:bg-red-50 transition-colors whitespace-nowrap cursor-pointer">
-            READ MORE
-          </a>
+          <Link href="/short-videos" className="text-xs font-bold text-[#b91c1c] border border-red-700/20 rounded-full px-4 py-1.5 hover:bg-red-50 transition-colors whitespace-nowrap cursor-pointer">
+            VIEW ALL
+          </Link>
         </div>
 
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
           {storiesData.map((story, index) => (
-            <div key={story.id} className={`group flex flex-col cursor-pointer${index >= 4 ? " sm:hidden" : ""}`}>
-              {/* Card Thumbnail */}
-              <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-gray-50 group-hover:shadow-md transition-shadow duration-300">
-                <Image
-                  src={story.image}
-                  alt={story.title}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  sizes="(max-width: 768px) 33vw, 200px"
-                />
-
-
-
-              </div>
-
-              {/* Title / Description */}
-              <h3 className="text-gray-900 font-bold mt-2 text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-red-700 transition-colors">
-                {story.title}
-              </h3>
+            <div key={story.id} className={`${index >= 3 ? "max-sm:hidden" : ""}`}>
+              <ShortVideoCard
+                story={story}
+                onClick={() => setActiveStoryIndex(index)}
+              />
             </div>
           ))}
         </div>
       </section>
+
+      {/* Video Player Modal */}
+      {activeStoryIndex !== null && (
+        <ShortVideoPlayerModal
+          stories={storiesData}
+          currentIndex={activeStoryIndex}
+          onClose={() => setActiveStoryIndex(null)}
+          onNavigate={(index) => setActiveStoryIndex(index)}
+        />
+      )}
 
       {/* Videos Section */}
       <section>

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   GeneralSettings,
   getSiteSettingsAction,
+  getCurrentAdminPasswordAction,
   updateGeneralSettingsAction,
   updateAdminSecurityAction,
 } from "@/app/actions/settings";
@@ -21,6 +22,8 @@ import {
   AlertCircle,
   Loader2,
   Image as ImageIcon,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export default function GeneralSettingsForm() {
@@ -31,27 +34,52 @@ export default function GeneralSettingsForm() {
   const [securityFeedback, setSecurityFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const [general, setGeneral] = useState<GeneralSettings>({
-    siteName: "Students Voice",
-    siteTagline: "Empowering Student Aspirations & Real-Time Exam Updates",
-    siteLogo: "",
-    siteFavicon: "",
+    siteName: "Students Hub",
+    siteTagline: "Learn • Grow • Build a Better Future",
+    siteLogo: "/logo.png",
+    siteFavicon: "/logo.png",
     supportEmail: "support@studentsvoice.in",
     contactPhone: "+91 98765 43210",
     contactAddress: "Hyderabad, Telangana, India",
     workingHours: "Mon - Sat: 9:00 AM - 6:00 PM IST",
-    adminEmail: "lovarajuk431902@gmail.com",
+    adminEmail: "admin@gmail.com",
   });
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const [showCurrentPassword, setShowCurrentPassword] = useState(true);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const checkSiteName = (val: string) => {
+    const trimmed = val.trim();
+    if (val !== trimmed) {
+      return "Site Name must not have leading or trailing spaces.";
+    }
+    const parts = val.split(" ");
+    if (parts.length !== 2 || parts[0] === "" || parts[1] === "") {
+      return "Site Name must contain exactly two words separated by a single space (e.g., 'Students Hub').";
+    }
+    return null;
+  };
+
   useEffect(() => {
     async function load() {
       try {
-        const settings = await getSiteSettingsAction();
+        const [settings, activePwd] = await Promise.all([
+          getSiteSettingsAction(),
+          getCurrentAdminPasswordAction(),
+        ]);
+
         if (settings && settings.general) {
           setGeneral(settings.general);
+        }
+        if (activePwd) {
+          setCurrentPassword(activePwd);
         }
       } catch (err) {
         console.error("Failed to load general settings:", err);
@@ -66,6 +94,15 @@ export default function GeneralSettingsForm() {
     e.preventDefault();
     setSaving(true);
     setFeedback(null);
+
+    const err = checkSiteName(general.siteName);
+    if (err) {
+      setFeedback({ type: "error", message: err });
+      setValidationError(err);
+      setSaving(false);
+      return;
+    }
+
     try {
       const res = await updateGeneralSettingsAction(general);
       if (res.success) {
@@ -100,7 +137,9 @@ export default function GeneralSettingsForm() {
 
       if (res.success) {
         setSecurityFeedback({ type: "success", message: "Admin credentials updated successfully!" });
-        setCurrentPassword("");
+        if (newPassword) {
+          setCurrentPassword(newPassword);
+        }
         setNewPassword("");
         setConfirmPassword("");
       } else {
@@ -154,79 +193,113 @@ export default function GeneralSettingsForm() {
         </div>
       )}
 
-      {/* Main General Settings Form */}
+      {/* Main General Form */}
       <form onSubmit={handleGeneralSubmit} className="space-y-6">
-        
-        {/* CARD 1: Brand & Identity */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-5">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-            <Globe className="w-4 h-4 text-blue-600" />
-            <h4 className="text-sm font-bold text-slate-900">Brand &amp; Identity</h4>
+        {/* Section 1: Brand & Logo Identity */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm space-y-5">
+          <div className="border-b border-slate-100 pb-3">
+            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-blue-600" />
+              Brand &amp; Visual Identity
+            </h4>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Customize website name, header tagline, custom logo, and browser favicon.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Site Title / Brand Name</label>
+              <label className="text-xs font-bold text-slate-700">Site Name / Brand Title</label>
               <input
                 type="text"
                 value={general.siteName}
-                onChange={(e) => setGeneral({ ...general, siteName: e.target.value })}
-                placeholder="Students Voice"
-                className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setGeneral({ ...general, siteName: val });
+                  setValidationError(checkSiteName(val));
+                }}
+                placeholder="Students Hub"
+                className={`w-full h-10 px-3.5 rounded-xl border text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 ${
+                  validationError
+                    ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
+                    : "border-slate-200 focus:ring-blue-500/20 focus:border-blue-500"
+                }`}
                 required
               />
+              {validationError && (
+                <p className="text-[10px] text-red-500 font-bold flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  {validationError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Tagline / Slogan</label>
+              <label className="text-xs font-bold text-slate-700">Header Tagline / Slogan</label>
               <input
                 type="text"
                 value={general.siteTagline}
                 onChange={(e) => setGeneral({ ...general, siteTagline: e.target.value })}
-                placeholder="Empowering Student Aspirations"
+                placeholder="Learn • Grow • Build a Better Future"
                 className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
           </div>
 
-          {/* Logo & Favicon MediaPickers */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-slate-100">
+            {/* Site Logo */}
             <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
+                Website Logo
+              </label>
               <MediaPicker
-                label="WEBSITE LOGO (.WEBP / PNG)"
-                type="image"
                 value={general.siteLogo}
                 onChange={(url) => setGeneral({ ...general, siteLogo: url })}
-                placeholder="Click to upload or pick header logo"
-                helperText="Recommended size: 250x60px. Supports transparent PNG / WebP."
+                label="Choose / Upload Logo"
+                type="image"
               />
+              <p className="text-[11px] text-slate-400">
+                Recommended transparent .PNG or .WebP (200x50px).
+              </p>
             </div>
 
+            {/* Favicon */}
             <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-blue-600" />
+                Browser Favicon (.ICO / .PNG)
+              </label>
               <MediaPicker
-                label="FAVICON / SITE ICON (.ICO / PNG)"
-                type="image"
                 value={general.siteFavicon}
                 onChange={(url) => setGeneral({ ...general, siteFavicon: url })}
-                placeholder="Click to upload or pick favicon"
-                helperText="Square 32x32px or 64x64px browser tab icon."
+                label="Choose / Upload Favicon"
+                type="image"
               />
+              <p className="text-[11px] text-slate-400">
+                Square format icon (32x32px or 64x64px) for browser tabs.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* CARD 2: Contact Information */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-5">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-            <Mail className="w-4 h-4 text-emerald-600" />
-            <h4 className="text-sm font-bold text-slate-900">Support &amp; Contact Information</h4>
+        {/* Section 2: Contact Information */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm space-y-5">
+          <div className="border-b border-slate-100 pb-3">
+            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Mail className="w-4 h-4 text-blue-600" />
+              Contact &amp; Support Channels
+            </h4>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Contact info displayed across footer, contact page, and student inquiry forms.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
                 <Mail className="w-3.5 h-3.5 text-slate-400" />
-                Support / Helpdesk Email
+                Support Email
               </label>
               <input
                 type="email"
@@ -238,9 +311,9 @@ export default function GeneralSettingsForm() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
                 <Phone className="w-3.5 h-3.5 text-slate-400" />
-                Support Phone Number
+                Contact Phone / WhatsApp Helpline
               </label>
               <input
                 type="text"
@@ -252,7 +325,7 @@ export default function GeneralSettingsForm() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
                 Office / Operating Address
               </label>
@@ -266,7 +339,7 @@ export default function GeneralSettingsForm() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-slate-400" />
                 Working Hours
               </label>
@@ -279,35 +352,39 @@ export default function GeneralSettingsForm() {
               />
             </div>
           </div>
-        </div>
 
-        {/* Save General Settings Button */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Saving Settings...</span>
-              </>
-            ) : (
-              <>
-                <Check className="w-4 h-4" />
-                <span>Save General Settings</span>
-              </>
-            )}
-          </button>
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Saving Settings...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Save General Settings</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </form>
 
-      {/* CARD 3: Admin Credentials & Security */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-5 mt-8">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-          <Shield className="w-4 h-4 text-purple-600" />
-          <h4 className="text-sm font-bold text-slate-900">Admin Account &amp; Password Security</h4>
+      {/* Section 3: Admin Account & Password Security */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm space-y-5">
+        <div className="border-b border-slate-100 pb-3">
+          <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-purple-600" />
+            Admin Account &amp; Password Security
+          </h4>
+          <p className="text-xs text-slate-400 mt-0.5">
+            View active credentials or update your admin email and password.
+          </p>
         </div>
 
         {securityFeedback && (
@@ -340,40 +417,79 @@ export default function GeneralSettingsForm() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            {/* Current Active Password */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                <KeyRound className="w-3.5 h-3.5 text-slate-400" />
-                Current Password
+              <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <KeyRound className="w-3.5 h-3.5 text-purple-600" />
+                  Current Password
+                </span>
+                <span className="text-[10px] text-purple-600 font-medium bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100">
+                  Active
+                </span>
               </label>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-              />
+              <div className="relative">
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="admin123"
+                  className="w-full h-10 pl-3.5 pr-10 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 bg-slate-50/50"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                  title={showCurrentPassword ? "Hide password" : "Show password"}
+                >
+                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
+            {/* New Password */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700">New Password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Leave blank to keep"
-                className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Leave blank to keep"
+                  className="w-full h-10 pl-3.5 pr-10 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                  title={showNewPassword ? "Hide password" : "Show password"}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
+            {/* Confirm New Password */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700">Confirm New Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm password"
-                className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  className="w-full h-10 pl-3.5 pr-10 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                  title={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
 

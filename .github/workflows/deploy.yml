@@ -1,0 +1,54 @@
+name: Production Auto Deployment (CI/CD)
+
+# Trigger only on manual run or when enabled for production
+on:
+  workflow_dispatch:
+  # Uncomment the lines below when you are ready to auto-deploy on git push:
+  # push:
+  #   branches:
+  #     - main
+  #     - master
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚀 Trigger Remote Deployment via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          script_stop: true
+          command_timeout: 15m
+          script: |
+            set -e
+            DEPLOY_DIR="${{ secrets.DEPLOY_PATH || '/root/news-website' }}"
+            
+            echo "=========================================================="
+            echo "Connecting to Server: $(hostname)"
+            echo "Deployment Directory: $DEPLOY_DIR"
+            echo "=========================================================="
+            
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              if [ -d "$HOME/news-website" ]; then
+                DEPLOY_DIR="$HOME/news-website"
+              elif [ -d "/var/www/news-website" ]; then
+                DEPLOY_DIR="/var/www/news-website"
+              else
+                echo "❌ Error: Deployment directory '$DEPLOY_DIR' not found on server!"
+                exit 1
+              fi
+            fi
+            
+            cd "$DEPLOY_DIR"
+            chmod +x ./scripts/*.sh 2>/dev/null || true
+            ./scripts/deploy.sh

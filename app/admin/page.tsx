@@ -118,6 +118,23 @@ interface NavMenuSection {
 export default function AdminDashboard() {
   const queryClient = useQueryClient();
 
+  const { data: settings } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings");
+      if (!res.ok) throw new Error("Failed to load settings");
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const siteName = settings?.general?.siteName || "Students Hub";
+  const logoSrc = settings?.general?.siteLogo || "/logo.png";
+
+  const nameParts = siteName.trim().split(/\s+/);
+  const firstPart = nameParts.length > 1 ? nameParts.slice(0, -1).join(" ") : nameParts[0];
+  const lastPart = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+
   // Navigation State
   const [activeMenu, setActiveMenu] = useState<string>("Dashboard");
   const [timeRange, setTimeRange] = useState<string>("Last 7 Days");
@@ -538,27 +555,37 @@ export default function AdminDashboard() {
       )}
 
       <aside
-        className={`w-64 bg-[#0B132B] text-slate-300 flex-shrink-0 flex flex-col justify-between fixed md:static inset-y-0 left-0 z-50 transition-transform duration-200 ease-in-out md:translate-x-0 ${
+        className={`w-64 bg-white text-slate-700 flex-shrink-0 flex flex-col justify-between fixed md:static inset-y-0 left-0 z-50 transition-transform duration-200 ease-in-out md:translate-x-0 ${
           mobileSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
-        } border-r border-slate-800/80 select-none`}
+        } border-r border-slate-200 select-none`}
       >
         <div>
           {/* Brand Header */}
-          <div className="px-6 py-5 flex items-center justify-between border-b border-slate-800/60">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-600/20 text-white flex items-center justify-center border border-blue-500/30">
-                <GraduationCap className="w-6 h-6 text-white" />
+          <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
+            <Link href="/admin" className="flex items-center gap-2.5">
+              <Image
+                src={logoSrc}
+                alt={siteName}
+                width={36}
+                height={36}
+                className="w-9 h-9 rounded-xl object-contain shadow-xs shrink-0"
+                unoptimized
+              />
+              <div className="leading-tight">
+                <div className="text-base font-extrabold tracking-tight text-slate-900">
+                  {firstPart}{" "}
+                  {lastPart && (
+                    <span className="text-white bg-red-500 px-1.5 py-0.5 rounded-md text-xs font-black">
+                      {lastPart}
+                    </span>
+                  )}
+                </div>
+                <div className="text-[10px] text-slate-400 font-semibold">Admin Panel</div>
               </div>
-              <div>
-                <h1 className="text-base font-bold text-white tracking-tight flex items-center gap-1.5">
-                  Students Voice
-                </h1>
-                <p className="text-[11px] text-slate-400 font-medium">Admin Panel</p>
-              </div>
-            </div>
+            </Link>
             <button
               onClick={() => setMobileSidebarOpen(false)}
-              className="p-1 rounded-lg text-slate-400 hover:text-white md:hidden"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 md:hidden cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -573,13 +600,13 @@ export default function AdminDashboard() {
                   setActiveMenu("Dashboard");
                   setMobileSidebarOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-150 ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all duration-150 cursor-pointer ${
                   activeMenu === "Dashboard"
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
-                <LayoutDashboard className="w-4 h-4" />
+                <LayoutDashboard className={`w-4 h-4 ${activeMenu === "Dashboard" ? "text-white" : "text-slate-400"}`} />
                 <span>Dashboard</span>
               </button>
             </div>
@@ -600,23 +627,25 @@ export default function AdminDashboard() {
                         setActiveMenu(item.name);
                         setMobileSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-3.5 py-2 rounded-lg font-medium transition-colors ${
+                      className={`w-full flex items-center justify-between px-3.5 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
                         isActive
                           ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <IconComponent className="w-4 h-4 text-slate-400 group-hover:text-slate-200" />
+                        <IconComponent className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400 group-hover:text-slate-600"}`} />
                         <span>{item.name}</span>
                       </div>
                       {item.count !== undefined && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-semibold">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                          isActive ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-500"
+                        }`}>
                           {item.count}
                         </span>
                       )}
                       {item.badge && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200/60 font-medium">
                           Soon
                         </span>
                       )}
@@ -629,10 +658,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Sidebar Footer / Logout */}
-        <div className="p-4 border-t border-slate-800/60">
+        <div className="p-4 border-t border-slate-100">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-900/60 hover:bg-red-500/10 border border-slate-800 hover:border-red-500/30 text-xs font-semibold text-slate-300 hover:text-red-400 transition-all duration-200"
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-200 text-xs font-semibold text-slate-600 hover:text-red-600 transition-all duration-200 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             <span>Logout</span>
@@ -645,14 +674,14 @@ export default function AdminDashboard() {
       {/* ========================================================================= */}
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         
-        {/* TOP NAVBAR (Dark Navy with Trending Ticker & Profile) */}
-        <header className="bg-[#0B132B] border-b border-slate-800/80 px-4 lg:px-8 py-2.5 flex items-center justify-between gap-4 sticky top-0 z-30 shadow-sm text-slate-300">
+        {/* TOP NAVBAR (Clean Crisp Light Theme with Trending Ticker & Profile) */}
+        <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-2.5 flex items-center justify-between gap-4 sticky top-0 z-30 shadow-xs text-slate-700">
           
           {/* Left: Mobile hamburger & Trending News Ticker */}
           <div className="flex items-center gap-3 overflow-hidden">
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white md:hidden bg-slate-800/60 shrink-0"
+              className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 md:hidden bg-slate-100 shrink-0 cursor-pointer"
               title="Open Navigation Menu"
             >
               <LayoutDashboard className="w-4 h-4" />
@@ -662,36 +691,36 @@ export default function AdminDashboard() {
               <Zap className="w-3 h-3 fill-current" />
               TRENDING:
             </span>
-            <div className="text-xs text-slate-300 font-medium truncate flex items-center gap-2">
-              <span className="hover:text-white cursor-pointer transition-colors">SSC CGL 2024 Notification Out</span>
-              <span className="text-slate-400">|</span>
-              <span className="hover:text-white cursor-pointer transition-colors">AP Inter Results 2024</span>
-              <span className="text-slate-400">|</span>
-              <span className="hover:text-white cursor-pointer transition-colors">TS TET Notification</span>
-              <span className="text-slate-400">|</span>
-              <span className="hover:text-white cursor-pointer transition-colors">JNTU Updates</span>
+            <div className="text-xs text-slate-600 font-medium truncate flex items-center gap-2">
+              <span className="hover:text-slate-900 cursor-pointer transition-colors">SSC CGL 2024 Notification Out</span>
+              <span className="text-slate-300">|</span>
+              <span className="hover:text-slate-900 cursor-pointer transition-colors">AP Inter Results 2024</span>
+              <span className="text-slate-300">|</span>
+              <span className="hover:text-slate-900 cursor-pointer transition-colors">TS TET Notification</span>
+              <span className="text-slate-300">|</span>
+              <span className="hover:text-slate-900 cursor-pointer transition-colors">JNTU Updates</span>
             </div>
           </div>
 
           {/* Right: Quick Links, Notification Bell & Admin Profile */}
           <div className="flex items-center gap-3 sm:gap-4 shrink-0">
             {/* Live Data Pulse */}
-            <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>Real-Time Sync</span>
             </div>
 
             <Link
               href="/"
               target="_blank"
-              className="text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-slate-800/60 transition-colors"
+              className="text-xs font-semibold text-slate-600 hover:text-blue-600 flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-slate-100 transition-colors"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">View Site</span>
             </Link>
 
             {/* Notification Bell */}
-            <div className="relative cursor-pointer p-1.5 rounded-lg hover:bg-slate-800/60 transition-colors text-slate-300">
+            <div className="relative cursor-pointer p-1.5 rounded-lg hover:bg-slate-100 transition-colors text-slate-600">
               <Bell className="w-4 h-4" />
               <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-red-500 text-white rounded-full text-[9px] font-bold flex items-center justify-center">
                 3
@@ -699,8 +728,8 @@ export default function AdminDashboard() {
             </div>
 
             {/* Admin Profile Pill & Logout */}
-            <div className="flex items-center gap-2.5 pl-2 border-l border-slate-800/80">
-              <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-700 bg-slate-800 relative">
+            <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 bg-slate-100 relative">
                 <Image
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80"
                   alt="Admin Avatar"
@@ -710,12 +739,12 @@ export default function AdminDashboard() {
                 />
               </div>
               <div className="hidden lg:block text-left">
-                <p className="text-xs font-bold text-white leading-tight">Admin</p>
+                <p className="text-xs font-bold text-slate-900 leading-tight">Admin</p>
                 <p className="text-[10px] text-slate-400 leading-tight">Super Administrator</p>
               </div>
               <button
                 onClick={handleLogout}
-                className="p-1.5 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-slate-800 hover:border-red-500/30 transition-all ml-1"
+                className="p-1.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200 hover:border-red-200 transition-all ml-1 cursor-pointer"
                 title="Sign Out"
               >
                 <LogOut className="w-4 h-4" />

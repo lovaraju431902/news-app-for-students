@@ -1,13 +1,24 @@
 "use client";
 
 import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Topbar from "@/components/Homescreen/topbar";
 import Header from "@/components/Homescreen/header";
 import Navbar from "@/components/Homescreen/Navbar";
 import Footer from "@/components/Homescreen/footer";
-import { Mail, Phone, MapPin, Send, MessageSquare } from "lucide-react";
+import { Mail, Phone, MapPin, Send, MessageSquare, Clock } from "lucide-react";
 
 export default function ContactPage() {
+  const { data: settings } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings");
+      if (!res.ok) throw new Error("Failed to load settings");
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -16,9 +27,14 @@ export default function ContactPage() {
   });
   const [submitted, setSubmitted] = useState(false);
 
+  const siteName = settings?.general?.siteName || "Students Hub";
+  const supportEmail = settings?.general?.supportEmail || "support@studentsvoice.in";
+  const contactPhone = settings?.general?.contactPhone || "+91 98765 43210";
+  const contactAddress = settings?.general?.contactAddress || "Hyderabad, Telangana, India";
+  const workingHours = settings?.general?.workingHours || "Mon - Sat: 9:00 AM - 6:00 PM IST";
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real application, submit data to backend action or API route.
     setSubmitted(true);
     setFormData({ name: "", email: "", subject: "", message: "" });
   };
@@ -39,10 +55,10 @@ export default function ContactPage() {
         <section className="bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-950 text-white py-12">
           <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 text-center">
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-              Contact Students Hub
+              Contact {siteName}
             </h1>
             <p className="mt-3 text-sm sm:text-base text-blue-100 max-w-xl mx-auto">
-              Have a query regarding a job notification? Noticed a mistake? Or want to contribute study material? Reach out to us.
+              Have a query regarding a job notification, exam results, or want to contribute study material? Reach out to our team.
             </p>
           </div>
         </section>
@@ -64,9 +80,9 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Email Address</h3>
-                  <p className="text-sm text-gray-600 mt-1">For general queries & suggestions:</p>
-                  <a href="mailto:support@studentsHub.in" className="text-sm font-semibold text-blue-600 hover:underline block mt-1">
-                    support@studentsHub.in
+                  <p className="text-sm text-gray-600 mt-1">For student queries &amp; suggestions:</p>
+                  <a href={`mailto:${supportEmail}`} className="text-sm font-semibold text-blue-600 hover:underline block mt-1">
+                    {supportEmail}
                   </a>
                 </div>
               </div>
@@ -77,10 +93,10 @@ export default function ContactPage() {
                   <Phone className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Student Support Line</h3>
-                  <p className="text-sm text-gray-600 mt-1">Available Mon-Fri, 10 AM - 5 PM:</p>
-                  <a href="tel:+91401234567" className="text-sm font-semibold text-emerald-600 hover:underline block mt-1">
-                    +91 40 1234 567
+                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Helpline &amp; Support</h3>
+                  <p className="text-sm text-gray-600 mt-1">Available: {workingHours}</p>
+                  <a href={`tel:${contactPhone.replace(/\s+/g, '')}`} className="text-sm font-semibold text-emerald-600 hover:underline block mt-1">
+                    {contactPhone}
                   </a>
                 </div>
               </div>
@@ -91,11 +107,22 @@ export default function ContactPage() {
                   <MapPin className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Corporate Office</h3>
-                  <p className="text-sm text-gray-600 mt-1">Students Hub Media Group</p>
+                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Office Location</h3>
                   <p className="text-sm text-gray-600 mt-1 font-medium leading-relaxed">
-                    Plot No. 42, Hitech City Main Road,<br />
-                    Madhapur, Hyderabad, Telangana - 500081
+                    {contactAddress}
+                  </p>
+                </div>
+              </div>
+
+              {/* Working Hours Card */}
+              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-md flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 grid place-items-center shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Working Hours</h3>
+                  <p className="text-sm text-gray-600 mt-1 font-medium leading-relaxed">
+                    {workingHours}
                   </p>
                 </div>
               </div>
@@ -117,77 +144,81 @@ export default function ContactPage() {
                   </p>
                   <button
                     onClick={() => setSubmitted(false)}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition-colors"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer"
                   >
                     Send Another Message
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="space-y-1.5">
-                      <label htmlFor="name" className="text-xs font-bold text-gray-700 uppercase">Your Name</label>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
-                        id="name"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        className="w-full h-10 px-3.5 bg-gray-50 border border-gray-250 rounded-lg text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                        placeholder="Enter your name"
+                        placeholder="John Doe"
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         required
                       />
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label htmlFor="email" className="text-xs font-bold text-gray-700 uppercase">Email Address</label>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                        Email Address <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="email"
-                        id="email"
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="w-full h-10 px-3.5 bg-gray-50 border border-gray-250 rounded-lg text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                        placeholder="Enter email address"
+                        placeholder="johndoe@example.com"
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         required
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label htmlFor="subject" className="text-xs font-bold text-gray-700 uppercase">Subject</label>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                      Subject <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
-                      id="subject"
                       name="subject"
                       value={formData.subject}
                       onChange={handleChange}
-                      className="w-full h-10 px-3.5 bg-gray-50 border border-gray-250 rounded-lg text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      placeholder="Feedback, job queries, errors, etc."
+                      placeholder="e.g. Job Notification Inquiry, Study Material"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       required
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label htmlFor="message" className="text-xs font-bold text-gray-700 uppercase">Message</label>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                      Message <span className="text-red-500">*</span>
+                    </label>
                     <textarea
-                      id="message"
                       name="message"
+                      rows={5}
                       value={formData.message}
                       onChange={handleChange}
-                      rows={5}
-                      className="w-full p-3.5 bg-gray-50 border border-gray-250 rounded-lg text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
-                      placeholder="Describe your inquiry in detail..."
+                      placeholder="Write your message here..."
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
                       required
-                    ></textarea>
+                    />
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm h-11 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-md cursor-pointer"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg cursor-pointer"
                   >
                     <Send className="w-4 h-4" />
-                    Send Message
+                    Submit Message
                   </button>
                 </form>
               )}

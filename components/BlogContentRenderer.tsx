@@ -111,10 +111,6 @@ const ADMIN_MAPPING: Record<string, { name: string; image: string }> = {
     name: "Sai Kiran",
     image: "https://res.cloudinary.com/tryonai/image/upload/v1781353613/create_a_kannada_indian_guy_202606131454_zrxvhu.jpg"
   },
-  // "career-jobs": {
-  //   name: "Harsha Vardhan",
-  //   image: "https://res.cloudinary.com/tryonai/image/upload/v1781353603/create_a_tamil_indian_guy_202606131451_tjp86m.jpg"
-  // },
 
   "youtube-growth": {
     name: "Pavan Kumar",
@@ -290,11 +286,20 @@ export default function BlogContentRenderer({ blog, inline = false }: { blog: Bl
   const [adminImgError, setAdminImgError] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [authorMapping, setAuthorMapping] = useState<Record<string, { name: string; image: string }>>({});
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       setShareUrl(window.location.href);
     }
+    fetch("/authors/mapping.json")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) {
+          setAuthorMapping(data);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const showToast = (message: string) => {
@@ -321,14 +326,17 @@ export default function BlogContentRenderer({ blog, inline = false }: { blog: Bl
 
   let adminInfo = {
     name: "Admin",
-    image: "https://res.cloudinary.com/tryonai/image/upload/v1781353613/create_a_kannada_indian_guy_202606131454_zrxvhu.jpg"
+    image: "/logo.png"
   };
 
   for (const { tag } of blog.tags) {
     const normalizedSlug = tag.slug?.toLowerCase();
     if (normalizedSlug) {
       const lookupKey = normalizedSlug === "career-jobs" ? "carrer-jobs" : normalizedSlug;
-      if (ADMIN_MAPPING[lookupKey]) {
+      if (authorMapping[lookupKey]) {
+        adminInfo = authorMapping[lookupKey];
+        break;
+      } else if (ADMIN_MAPPING[lookupKey]) {
         adminInfo = ADMIN_MAPPING[lookupKey];
         break;
       }

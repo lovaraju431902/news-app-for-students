@@ -1,16 +1,27 @@
+"use client";
+
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import Topbar from "@/components/Homescreen/topbar";
 import Header from "@/components/Homescreen/header";
 import Navbar from "@/components/Homescreen/Navbar";
 import Footer from "@/components/Homescreen/footer";
 import { BookOpen, FileCheck, RefreshCw, Eye } from "lucide-react";
 
-export const metadata = {
-  title: "Editorial Policy | Students Hub",
-  description: "Read about our guidelines on accuracy, official verification, correction policy, and transparency at Students Hub.",
-};
-
 export default function EditorialPolicyPage() {
+  const { data: settings } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings");
+      if (!res.ok) throw new Error("Failed to load settings");
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const siteName = settings?.general?.siteName || "Students Hub";
+  const supportEmail = settings?.general?.supportEmail || "support@studentsvoice.in";
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
       <Topbar />
@@ -41,7 +52,7 @@ export default function EditorialPolicyPage() {
                 1. Journalistic Mission
               </h2>
               <p className="text-sm sm:text-base leading-relaxed">
-                At <strong>Students Hub (స్టూడెంట్స్ వాయిస్)</strong>, we recognize that the careers and academic lives of young aspirants depend on the information we provide. A single typo in a deadline date, or an incorrect qualification criteria listing, can cost students their application opportunities.
+                At <strong>{siteName}</strong>, we recognize that the careers and academic lives of young aspirants depend on the information we provide. A single typo in a deadline date, or an incorrect qualification criteria listing, can cost students their application opportunities.
               </p>
               <p className="text-sm sm:text-base leading-relaxed">
                 Hence, we hold ourselves to rigorous standards of accuracy, objectivity, and transparency.
@@ -90,7 +101,7 @@ export default function EditorialPolicyPage() {
                   A correction notice is appended at the top of the corrected article, explaining the exact correction made to prevent misleading candidates who had read the previous version.
                 </li>
                 <li>
-                  If you spot an error in any of our reports, please email us directly at <a href="mailto:support@studentsHub.in" className="text-blue-600 hover:underline">support@studentsHub.in</a> with the URL and specific corrections.
+                  If you spot an error in any of our reports, please email us directly at <a href={`mailto:${supportEmail}`} className="text-blue-600 hover:underline">{supportEmail}</a> with the URL and specific corrections.
                 </li>
               </ul>
             </div>
@@ -102,7 +113,7 @@ export default function EditorialPolicyPage() {
                 4. Independence & Neutrality
               </h2>
               <p className="text-sm sm:text-base leading-relaxed">
-                Students Hub operates as an independent news platform. We are not affiliated with APPSC, TSPSC, or any government department.
+                {siteName} operates as an independent news platform. We are not affiliated with APPSC, TSPSC, or any government department.
               </p>
               <p className="text-sm sm:text-base leading-relaxed">
                 All editorial recommendations, study materials, and guidelines are formulated solely based on merit, competitive utility, and student relevance. Commercial partnerships or display advertising do not influence our syllabus breakdowns, exam reviews, or eligibility analyses.

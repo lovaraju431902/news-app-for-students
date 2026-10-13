@@ -1,16 +1,27 @@
+"use client";
+
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import Topbar from "@/components/Homescreen/topbar";
 import Header from "@/components/Homescreen/header";
 import Navbar from "@/components/Homescreen/Navbar";
 import Footer from "@/components/Homescreen/footer";
 import { Shield, Eye, Lock, FileText } from "lucide-react";
 
-export const metadata = {
-  title: "Privacy Policy | Students Hub",
-  description: "Understand how we collect, protect, and use your personal information when visiting Students Hub.",
-};
-
 export default function PrivacyPolicyPage() {
+  const { data: settings } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings");
+      if (!res.ok) throw new Error("Failed to load settings");
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const siteName = settings?.general?.siteName || "Students Hub";
+  const supportEmail = settings?.general?.supportEmail || "support@studentsvoice.in";
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
       <Topbar />
@@ -41,10 +52,10 @@ export default function PrivacyPolicyPage() {
                 1. Overview & Commitment
               </h2>
               <p className="text-sm sm:text-base leading-relaxed">
-                At <strong>Students Hub</strong>, accessible from <a href="/" className="text-blue-600 hover:underline">studentsHub.in</a>, the privacy of our visitors is of paramount importance. This Privacy Policy document outlines the types of personal data we collect and record, and how we utilize it.
+                At <strong>{siteName}</strong>, accessible from our domain, the privacy of our visitors is of paramount importance. This Privacy Policy document outlines the types of personal data we collect and record, and how we utilize it.
               </p>
               <p className="text-sm sm:text-base leading-relaxed">
-                If you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at <a href="mailto:support@studentsHub.in" className="text-blue-600 hover:underline">support@studentsHub.in</a>.
+                If you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at <a href={`mailto:${supportEmail}`} className="text-blue-600 hover:underline">{supportEmail}</a>.
               </p>
             </div>
 
@@ -62,7 +73,7 @@ export default function PrivacyPolicyPage() {
                   <strong>Newsletter Subscriptions:</strong> If you subscribe to our weekly newsletter alerts, we collect your email address.
                 </li>
                 <li>
-                  <strong>Log Files:</strong> Students Hub follows a standard procedure of using log files. These files log visitors when they visit websites. The information collected by log files includes internet protocol (IP) addresses, browser type, Internet Service Provider (ISP), date/time stamps, referring/exit pages, and click counts. These are not linked to personally identifiable information.
+                  <strong>Log Files:</strong> {siteName} follows a standard procedure of using log files. These files log visitors when they visit websites. The information collected by log files includes internet protocol (IP) addresses, browser type, Internet Service Provider (ISP), date/time stamps, referring/exit pages, and click counts. These are not linked to personally identifiable information.
                 </li>
                 <li>
                   <strong>Cookies:</strong> Like any other website, we use "cookies" to store preferences and page paths visited by our users to optimize custom homepage preferences.
@@ -98,7 +109,7 @@ export default function PrivacyPolicyPage() {
                 We utilize third-party vendors and advertising programs, such as Google AdSense, to display ads when you visit our website. These advertisers may use DART cookies to serve ads based on your visit to our site and other sites on the Internet.
               </p>
               <p className="text-sm sm:text-base leading-relaxed">
-                Note that Students Hub has no access to or control over cookies that are used by third-party advertisers. You may consult the respective Privacy Policies of these third-party ad servers for more detailed info or instructions on how to opt-out.
+                Note that {siteName} has no access to or control over cookies that are used by third-party advertisers. You may consult the respective Privacy Policies of these third-party ad servers for more detailed info or instructions on how to opt-out.
               </p>
             </div>
 

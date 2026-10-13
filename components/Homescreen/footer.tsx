@@ -1,22 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { GraduationCap, Mail } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
 import Image from "next/image";
 
 export default function Footer() {
-  const [settings, setSettings] = useState<any>(null);
-
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.general) {
-          setSettings(data);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const { data: settings } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings");
+      if (!res.ok) throw new Error("Failed to load settings");
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5, // Cache for 5 mins
+  });
 
   const categories = [
     { name: "Part Time Income", href: "/part-time-income" },
@@ -34,12 +31,22 @@ export default function Footer() {
     { name: "Editorial Policy", href: "/editorial-policy" },
     { name: "Privacy Policy", href: "/privacy-policy" },
     { name: "Terms of Service", href: "/terms-of-service" },
-    { name: "Sitemap", href: "/sitemap" }
+    { name: "Sitemap", href: "/sitemap.xml" }
   ];
 
-  const siteName = settings?.general?.siteName || "Students Voice";
-  const siteTagline = settings?.general?.siteTagline || "News • Jobs • Tech • Education";
-  const logoUrl = settings?.general?.siteLogo;
+  const siteName = settings?.general?.siteName || "Students Hub";
+  const siteTagline = settings?.general?.siteTagline || "Learn • Grow • Build a Better Future";
+  const logoUrl = settings?.general?.siteLogo || "/logo.png";
+
+  const nameParts = siteName.trim().split(/\s+/);
+  const firstPart = nameParts.length > 1 ? nameParts.slice(0, -1).join(" ") : nameParts[0];
+  const lastPart = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+
+  const supportEmail = settings?.general?.supportEmail || "support@studentsvoice.in";
+  const contactPhone = settings?.general?.contactPhone;
+  const contactAddress = settings?.general?.contactAddress;
+  const workingHours = settings?.general?.workingHours;
+
   const social = settings?.social || {
     facebook: "https://facebook.com",
     instagram: "https://instagram.com",
@@ -57,33 +64,56 @@ export default function Footer() {
           {/* Column 1: Brand details */}
           <div className="space-y-4">
             <a href="/" className="flex items-center gap-2.5 shrink-0">
-              {logoUrl ? (
-                <Image
-                  src={logoUrl}
-                  alt={siteName}
-                  width={160}
-                  height={44}
-                  className="h-10 w-auto object-contain"
-                  unoptimized
-                />
-              ) : (
-                <>
-                  <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-red-500 to-red-600 grid place-items-center text-white">
-                    <GraduationCap className="w-6 h-6" />
-                  </div>
-                  <div className="leading-tight">
-                    <div className="text-[22px] font-extrabold tracking-tight text-slate-900">
-                      {siteName}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground font-medium">{siteTagline}</div>
-                  </div>
-                </>
-              )}
+              <Image
+                src={logoUrl}
+                alt={siteName}
+                width={44}
+                height={44}
+                className="w-11 h-11 rounded-xl object-contain shrink-0"
+                unoptimized
+              />
+              <div className="leading-tight flex flex-col justify-center">
+                <div className="text-[24px] sm:text-[26px] font-black tracking-tight text-slate-950 flex items-center gap-1.5 leading-none">
+                  <span>{firstPart}</span>
+                  {lastPart && (
+                    <span className="text-white bg-[#FF2E3B] px-2 py-0.5 rounded-[8px] text-[20px] sm:text-[22px] font-black inline-flex items-center justify-center">
+                      {lastPart}
+                    </span>
+                  )}
+                </div>
+                <div className="text-[11px] sm:text-[12px] text-slate-500 font-bold tracking-wide mt-1">
+                  {siteTagline}
+                </div>
+              </div>
             </a>
 
             <p className="text-xs sm:text-sm text-gray-500 leading-relaxed max-w-sm">
               {siteName} is your premier digital resource for educational announcements, competitive exam notifications, government job alerts, study materials, and career growth.
             </p>
+
+            {/* Dynamic Contact details from Admin */}
+            <div className="space-y-1.5 pt-1 text-xs text-slate-500">
+              {supportEmail && (
+                <div className="flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <a href={`mailto:${supportEmail}`} className="hover:text-blue-600 transition-colors">
+                    {supportEmail}
+                  </a>
+                </div>
+              )}
+              {contactPhone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{contactPhone}</span>
+                </div>
+              )}
+              {contactAddress && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                  <span>{contactAddress}</span>
+                </div>
+              )}
+            </div>
 
             {/* Dynamic Social Media Links */}
             <div className="flex items-center gap-3 pt-2">
@@ -168,7 +198,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 4: Newsletter & Support */}
+          {/* Column 4: Newsletter & Working Hours */}
           <div className="space-y-4">
             <h3 className="text-gray-900 font-extrabold text-sm tracking-wider uppercase mb-1">
               Subscribe &amp; Updates
@@ -195,6 +225,13 @@ export default function Footer() {
                 Subscribe Now
               </button>
             </form>
+
+            {workingHours && (
+              <div className="pt-2 flex items-center gap-2 text-xs text-slate-400 border-t border-gray-100">
+                <Clock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>Working: {workingHours}</span>
+              </div>
+            )}
           </div>
 
         </div>
