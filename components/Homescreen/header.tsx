@@ -2,8 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
-import { Bell, Mail } from "lucide-react";
+import Link from "next/link";
+import { Bell, Mail, Crown } from "lucide-react";
 import SearchInput from "./SearchInput";
+import AdBanner from "@/components/ads/AdBanner";
+import { UserNav } from "@/components/auth/UserNav";
 
 export default function Header() {
     const { data: settings } = useQuery({
@@ -54,12 +57,14 @@ export default function Header() {
 
                     {/* Actions for Mobile */}
                     <div className="flex md:hidden items-center gap-2 shrink-0">
-                        <button className="relative w-9 h-9 grid place-items-center rounded-full bg-muted">
-                            <Bell className="w-4 h-4" />
-                        </button>
-                        <button className="h-9 px-3 rounded-lg text-white font-semibold text-xs flex items-center gap-1 bg-blue-600 shadow-md">
-                            <Mail className="w-3.5 h-3.5" /> Subscribe
-                        </button>
+                        <Link
+                            href="/pricing"
+                            className="h-9 px-2.5 rounded-lg text-white font-semibold text-xs flex items-center gap-1 bg-gradient-to-r from-amber-500 to-yellow-600 shadow-md"
+                            title="Premium Membership"
+                        >
+                            <Crown className="w-3.5 h-3.5 fill-white" />
+                        </Link>
+                        <UserNav />
                     </div>
                 </div>
 
@@ -69,15 +74,21 @@ export default function Header() {
                 </div>
 
                 {/* Actions for Desktop */}
-                <div className="hidden md:flex gap-3 shrink-0">
-                    <button className="relative w-11 h-11 grid place-items-center rounded-full bg-muted">
-                        <Bell className="w-5 h-5" />
-                        <span className="absolute -top-1 -right-1 w-5 h-5 grid place-items-center rounded-full bg-accent-red text-white text-[10px] font-bold">3</span>
-                    </button>
-                    <button className="h-11 px-5 rounded-lg text-white font-semibold text-sm flex items-center gap-2 bg-blue-600 shadow-md">
-                        <Mail className="w-4 h-4" /> Subscribe
-                    </button>
+                <div className="hidden md:flex items-center gap-3 shrink-0">
+                    <Link
+                        href="/pricing"
+                        className="h-11 px-4 rounded-lg text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 shadow-md transition"
+                    >
+                        <Crown className="w-4 h-4 fill-white" />
+                        <span>Premium (₹399)</span>
+                    </Link>
+                    <UserNav />
                 </div>
+            </div>
+
+            {/* Header Ad Space (Desktop 800x130 / Mobile 300x250) */}
+            <div className="max-w-[1440px] mx-auto px-4">
+                <AdBanner space="header" />
             </div>
         </header>
     );

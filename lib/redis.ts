@@ -56,5 +56,25 @@ export const redis = {
       console.error("Redis DEL error:", err);
       return false;
     }
+  },
+
+  async incr(key: string): Promise<number | null> {
+    if (!client) return null;
+    try {
+      return await client.incr(key);
+    } catch (err) {
+      console.error("Redis INCR error:", err);
+      return null;
+    }
+  },
+
+  async keys(pattern: string): Promise<string[]> {
+    if (!client) return [];
+    try {
+      return await client.keys(pattern);
+    } catch (err) {
+      console.error("Redis KEYS error:", err);
+      return [];
+    }
   }
 };

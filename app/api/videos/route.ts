@@ -1,9 +1,17 @@
 export const revalidate = 60;
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getDynamicHomepageSectionPosts } from "@/lib/homepage-service"
 
 export async function GET(request: Request) {
     try {
+        // 1. Try dynamic posts from HomepageItem
+        const dynamicVideos = await getDynamicHomepageSectionPosts("videos", 10);
+        if (dynamicVideos.length > 0) {
+            return NextResponse.json({ data: dynamicVideos }, { status: 200 });
+        }
+
+        // 2. Fallback to legacy Video table if no dynamic posts assigned yet
         const result = await prisma.video.findMany({
             where: {
                 isActive: true,

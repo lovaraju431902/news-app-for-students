@@ -1,12 +1,17 @@
 export const revalidate = 60;
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-
+import { getDynamicHomepageSectionPosts } from "@/lib/homepage-service"
 
 export async function GET(res: Request) {
-
     try {
+        // 1. Try dynamic posts from HomepageItem
+        const dynamicLatest = await getDynamicHomepageSectionPosts("latest_news", 8);
+        if (dynamicLatest.length > 0) {
+            return NextResponse.json({ data: dynamicLatest }, { status: 200 });
+        }
 
+        // 2. Fallback to legacy LatestNews table if no dynamic posts assigned yet
         const result1 = await prisma.latestNews.findMany({
             where: {
                 isActive: true,
@@ -14,20 +19,13 @@ export async function GET(res: Request) {
             orderBy: {
                 createdAt: "desc",
             },
-            take: 4
-
-
+            take: 8,
         })
         return NextResponse.json({ data: result1 }, { status: 200 })
-
-
-
-
     } catch (error) {
         console.log(error)
         return NextResponse.json({ error: "Failed to get Latest news" }, { status: 500 })
     }
-
 }
 
 export async function POST(request: Request) {

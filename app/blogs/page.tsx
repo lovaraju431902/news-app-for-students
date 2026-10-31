@@ -17,6 +17,7 @@ import Navbar from "@/components/Homescreen/Navbar";
 import Footer from "@/components/Homescreen/footer";
 import CategoriesSidebar from "@/components/Homescreen/CategoriesSidebar";
 import RightRail from "@/components/Homescreen/righttail";
+import AdBanner from "@/components/ads/AdBanner";
 
 interface Tag {
   id: string;
@@ -160,6 +161,9 @@ export default function BlogSearchPage() {
                 </p>
               </div>
 
+              {/* Posts (Top) Ad Space */}
+              <AdBanner space="posts_top" />
+
               {/* Blogs Grid */}
               {loadingBlogs ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
@@ -294,6 +298,9 @@ export default function BlogSearchPage() {
                       )}
                     </div>
                   )}
+
+                  {/* Posts (Bottom) Ad Space */}
+                  <AdBanner space="posts_bottom" className="mt-8" />
                 </>
               )}
 

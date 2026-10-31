@@ -414,8 +414,68 @@ async function main() {
     const ftsSqlPath = path.join(process.cwd(), "prisma", "full_text_search.sql");
     if (fs.existsSync(ftsSqlPath)) {
       console.log("🔍 Applying Full Text Search triggers and functions...");
-      const sqlContent = fs.readFileSync(ftsSqlPath, "utf-8");
-      await prisma.$executeRawUnsafe(sqlContent);
+      const statements = [
+        `ALTER TABLE "Blog" ADD COLUMN IF NOT EXISTS "search_vector" tsvector;`,
+        `CREATE OR REPLACE FUNCTION blog_search_vector_trigger() RETURNS trigger AS $$
+BEGIN
+  NEW."search_vector" :=
+    setweight(to_tsvector('english', COALESCE(NEW.title, '')), 'A') ||
+    setweight(to_tsvector('english', COALESCE(NEW.excerpt, '')), 'B') ||
+    setweight(to_tsvector('english', COALESCE(NEW.content, '')), 'C') ||
+    setweight(to_tsvector('english', COALESCE(NEW."seoKeywords", '')), 'D');
+  RETURN NEW;
+END
+$$ LANGUAGE plpgsql;`,
+        `DROP TRIGGER IF EXISTS blog_search_vector_update ON "Blog";`,
+        `CREATE TRIGGER blog_search_vector_update
+BEFORE INSERT OR UPDATE ON "Blog"
+FOR EACH ROW EXECUTE FUNCTION blog_search_vector_trigger();`,
+        `UPDATE "Blog" SET "search_vector" =
+  setweight(to_tsvector('english', COALESCE(title, '')), 'A') ||
+  setweight(to_tsvector('english', COALESCE(excerpt, '')), 'B') ||
+  setweight(to_tsvector('english', COALESCE(content, '')), 'C') ||
+  setweight(to_tsvector('english', COALESCE("seoKeywords", '')), 'D');`,
+        `CREATE INDEX IF NOT EXISTS blog_search_vector_idx ON "Blog" USING GIN ("search_vector");`,
+        `CREATE OR REPLACE FUNCTION search_blogs(search_term text)
+RETURNS TABLE (
+  id text,
+  title text,
+  slug text,
+  excerpt text,
+  "featuredImg" text,
+  "createdAt" timestamp,
+  rank real
+) AS $$
+DECLARE
+  parsed_query tsquery;
+BEGIN
+  SELECT string_agg(word || ':*', ' & ')::tsquery INTO parsed_query
+  FROM unnest(string_to_array(regexp_replace(trim(search_term), '[^\\w\\s\\-\\.]', '', 'g'), ' ')) AS word
+  WHERE word <> '';
+
+  IF parsed_query IS NULL OR parsed_query = ''::tsquery THEN
+    parsed_query := plainto_tsquery('english', search_term);
+  END IF;
+
+  RETURN QUERY
+  SELECT 
+    b.id::text,
+    b.title::text,
+    b.slug::text,
+    b.excerpt::text,
+    b."featuredImg"::text,
+    b."createdAt"::timestamp,
+    ts_rank_cd(b.search_vector, parsed_query)::real AS rank
+  FROM "Blog" b
+  WHERE b.search_vector @@ parsed_query
+  ORDER BY rank DESC;
+END;
+$$ LANGUAGE plpgsql;`,
+      ];
+
+      for (const stmt of statements) {
+        await prisma.$executeRawUnsafe(stmt);
+      }
       console.log("✅ Full Text Search function and triggers configured successfully.");
     }
   } catch (err) {

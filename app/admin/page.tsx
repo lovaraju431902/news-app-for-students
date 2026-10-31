@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   FolderArchive,
   Video,
+  Megaphone,
   Users,
   UserCheck,
   ShieldAlert,
@@ -49,8 +50,10 @@ import {
   ShieldCheck,
   AlertCircle,
   Copy,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Lock,
 } from "lucide-react";
+import { getCategorySidebarIcon, isDefaultCategory } from "@/lib/category-icons";
 import { getAdminBlogsAction, deleteBlogAction, getTagsAction, createTagAction, deleteTagAction } from "../actions/blogs";
 import { getAdminPromptsAction, createPromptAction, deletePromptAction } from "../actions/prompts";
 import { getAdminFilesAction, createFileAction, deleteFileAction } from "../actions/files";
@@ -60,7 +63,16 @@ import HomepageSectionsManager from "@/components/HomepageSectionsManager";
 import GeneralSettingsForm from "@/components/admin/GeneralSettingsForm";
 import SeoSettingsForm from "@/components/admin/SeoSettingsForm";
 import SocialSettingsForm from "@/components/admin/SocialSettingsForm";
+import ShortVideosManager from "@/components/admin/ShortVideosManager";
+import AdSpacesManager from "@/components/admin/AdSpacesManager";
+import { CategoryBlockStyleModal } from "@/components/admin/CategoryBlockStyleModal";
+import { seedDefaultCategoryBlockStylesAction } from "@/app/actions/categories";
+import { getAdminDashboardStatsAction } from "@/app/actions/admin-stats";
+import UsersManager from "@/components/admin/UsersManager";
+import SubscribersManager from "@/components/admin/SubscribersManager";
+import CommentsManager from "@/components/admin/CommentsManager";
 import { logoutAction } from "../actions/auth";
+import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface TagItem {
@@ -70,6 +82,17 @@ interface TagItem {
   parentId?: string | null;
   children?: TagItem[];
   blogs?: { blogId: string }[];
+  showOnHomepage?: boolean;
+  homepageBlockStyle?: string;
+  homepageOrder?: number;
+  homepagePostLimit?: number;
+  homepageColumns?: number;
+  showThumbnail?: boolean;
+  showDate?: boolean;
+  showExcerpt?: boolean;
+  showViewAll?: boolean;
+  customTitle?: string | null;
+  accentColor?: string | null;
 }
 
 interface Blog {
@@ -148,6 +171,8 @@ export default function AdminDashboard() {
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [selectedCategoryForStyle, setSelectedCategoryForStyle] = useState<TagItem | null>(null);
+  const [isStyleModalOpen, setIsStyleModalOpen] = useState(false);
 
   // Forms
   const [categoryName, setCategoryName] = useState("");
@@ -221,6 +246,16 @@ export default function AdminDashboard() {
   });
   const mediaLibrary = (mediaLibraryData as MediaItem[]) || [];
 
+  const { data: statsData, isLoading: loadingStats, isFetching: fetchingStats, refetch: refetchStats } = useQuery({
+    queryKey: ["admin-dashboard-stats"],
+    queryFn: async () => {
+      const res = await getAdminDashboardStatsAction();
+      if (!res.success) throw new Error(res.error || "Failed to load dashboard statistics.");
+      return res;
+    },
+    refetchInterval: 8000,
+  });
+
   const deleteMediaMutation = useMutation({
     mutationFn: async (url: string) => {
       if (!window.confirm("Are you sure you want to permanently delete this media file?")) {
@@ -272,6 +307,21 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       setIsCategoryModalOpen(false);
       setCategoryName("");
+    },
+    onError: (err: any) => {
+      alert(err.message);
+    }
+  });
+
+  const seedStylesMutation = useMutation({
+    mutationFn: async () => {
+      const res = await seedDefaultCategoryBlockStylesAction();
+      if (!res.success) throw new Error(res.error || "Failed to seed default styles");
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tags"] });
+      queryClient.invalidateQueries({ queryKey: ["homepage-category-blocks"] });
     },
     onError: (err: any) => {
       alert(err.message);
@@ -380,30 +430,30 @@ export default function AdminDashboard() {
 
     const totalCount = blogs.length;
     const catCount = tags.length;
-    const estViews = totalCount > 0 ? (totalCount * 185 + 420).toLocaleString() : "245,789";
+    const statsObj = statsData?.success ? statsData.stats : null;
+    const realUsers = statsObj?.totalUsers ?? 0;
+    const realComments = statsObj?.totalComments ?? 0;
+    const realSubscribers = statsObj?.activeSubscribers ?? 0;
+    const realViews = statsObj?.totalViews ?? 0;
+    const mrr = statsObj?.monthlyRecurringRevenue ?? 0;
 
     return {
       totalPosts: totalCount.toLocaleString(),
       categories: catCount.toString(),
-      users: "Coming Soon",
-      comments: "Coming Soon",
-      subscribers: "Coming Soon",
-      pageViews: estViews,
+      users: loadingStats ? "..." : realUsers.toLocaleString(),
+      comments: loadingStats ? "..." : realComments.toLocaleString(),
+      subscribers: loadingStats ? "..." : realSubscribers.toLocaleString(),
+      pageViews: loadingStats ? "..." : realViews.toLocaleString(),
+      mrr: mrr.toLocaleString(),
       totalWords: totalWords.toLocaleString(),
       readTimeMins: Math.max(blogs.length, Math.ceil(totalWords / 200))
     };
-  }, [blogs, tags]);
+  }, [blogs, tags, statsData, loadingStats]);
 
   // Real-time Top Categories with counts from database
   const topCategories = useMemo<Array<{ id?: string; name: string; slug?: string; count: string; iconBg: string }>>(() => {
     if (tags.length === 0) {
-      return [
-        { id: undefined, name: "Govt Jobs", slug: "govt-jobs", count: "245 Posts", iconBg: "bg-blue-100 text-blue-600" },
-        { id: undefined, name: "Study Tips", slug: "study-tips", count: "198 Posts", iconBg: "bg-emerald-100 text-emerald-600" },
-        { id: undefined, name: "Tech News", slug: "tech-news", count: "156 Posts", iconBg: "bg-purple-100 text-purple-600" },
-        { id: undefined, name: "YouTube Tips", slug: "youtube-tips", count: "134 Posts", iconBg: "bg-red-100 text-red-600" },
-        { id: undefined, name: "Exam Prep", slug: "exam-prep", count: "98 Posts", iconBg: "bg-indigo-100 text-indigo-600" }
-      ];
+      return [];
     }
 
     const colors = [
@@ -421,65 +471,22 @@ export default function AdminDashboard() {
         id: tag.id,
         name: tag.name,
         slug: tag.slug,
-        count: `${count || (12 + idx * 8)} Posts`,
+        count: `${count} Posts`,
         iconBg: colors[idx % colors.length]
       };
     });
   }, [tags, blogs]);
 
-  // Real-time formatted blogs list
+  // Real-time formatted blogs list backed by real database records
   const displayPosts = useMemo(() => {
-    if (blogs.length === 0) {
-      return [
-        {
-          id: "demo-1",
-          title: "SSC CGL 2024 Notification Released for 17727 Vacancies",
-          slug: "ssc-cgl-2024-notification",
-          category: "Govt Jobs",
-          categorySlug: "govt-jobs",
-          author: "Admin Team",
-          status: "Published",
-          views: "12.5K",
-          comments: "Coming Soon",
-          date: "May 25, 2024",
-          image: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=120&q=80"
-        },
-        {
-          id: "demo-2",
-          title: "How to Prepare for Competitive Exams While College Studies",
-          slug: "prepare-competitive-exams-college",
-          category: "Study Tips",
-          categorySlug: "study-tips",
-          author: "Admin Team",
-          status: "Published",
-          views: "8.3K",
-          comments: "Coming Soon",
-          date: "May 24, 2024",
-          image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=120&q=80"
-        },
-        {
-          id: "demo-3",
-          title: "Top 5 AI Tools Every Student Must Use in 2024",
-          slug: "top-5-ai-tools-for-students",
-          category: "Tech News",
-          categorySlug: "tech-news",
-          author: "Admin Team",
-          status: "Published",
-          views: "15.2K",
-          comments: "Coming Soon",
-          date: "May 23, 2024",
-          image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=120&q=80"
-        }
-      ];
-    }
-
     return blogs
       .filter((b) => !searchFilter || b.title.toLowerCase().includes(searchFilter.toLowerCase()))
-      .map((b, idx) => {
+      .map((b) => {
         const tagObj = b.tags && b.tags.length > 0 ? b.tags[0].tag : null;
         const tagLabel = tagObj?.name || "General";
         const categorySlug = tagObj?.slug || "general";
         const dateStr = b.createdAt ? new Date(b.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Today";
+        const postViews = (b as any).views ? Number((b as any).views).toLocaleString() : "0";
         return {
           id: b.id,
           title: b.title,
@@ -488,8 +495,8 @@ export default function AdminDashboard() {
           categorySlug: categorySlug,
           author: "Admin Team",
           status: "Published",
-          views: `${(5.2 + (idx * 1.8)).toFixed(1)}K`,
-          comments: "Coming Soon",
+          views: postViews,
+          comments: `${(b as any)._count?.comments ?? 0}`,
           date: dateStr,
           image: b.featuredImg || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=120&q=80"
         };
@@ -501,6 +508,8 @@ export default function AdminDashboard() {
     window.location.href = "/admin/login";
   };
 
+  const statsObj = statsData?.success ? statsData.stats : null;
+
   const navMenuItems: NavMenuSection[] = [
     {
       section: "CONTENT MANAGEMENT",
@@ -510,13 +519,15 @@ export default function AdminDashboard() {
         { name: "AI Prompts", icon: Sparkles, count: prompts.length },
         { name: "Study Files", icon: Paperclip, count: files.length },
         { name: "Homepage Manager", icon: SlidersHorizontal },
+        { name: "Short Videos", icon: Video },
+        { name: "Ad Spaces", icon: Megaphone },
         { name: "Media Library", icon: FolderArchive, count: mediaLibrary.length }
       ]
     },
     {
       section: "USER MANAGEMENT",
       items: [
-        { name: "Users", icon: Users, badge: "Coming Soon" },
+        { name: "Users", icon: Users, count: statsObj?.totalUsers ?? 0 },
         { name: "Authors", icon: UserCheck, badge: "Coming Soon" },
         { name: "Roles & Permissions", icon: ShieldAlert, badge: "Coming Soon" }
       ]
@@ -524,8 +535,8 @@ export default function AdminDashboard() {
     {
       section: "ENGAGEMENT",
       items: [
-        { name: "Comments", icon: MessageSquare, badge: "Coming Soon" },
-        { name: "Subscribers", icon: Mail, badge: "Coming Soon" },
+        { name: "Comments", icon: MessageSquare, count: statsObj?.totalComments ?? 0 },
+        { name: "Subscribers", icon: Mail, count: statsObj?.activeSubscribers ?? 0 },
         { name: "Contact Messages", icon: Inbox, badge: "Coming Soon" }
       ]
     },
@@ -844,55 +855,70 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* 3. Users (No Auth - Coming Soon) */}
-                <div className="bg-purple-50/50 hover:bg-purple-50/80 border border-purple-100 rounded-2xl p-4 transition-all duration-200 flex flex-col justify-between shadow-xs">
+                {/* 3. Users (Real-time Database Accounts) */}
+                <div
+                  onClick={() => setActiveMenu("Users")}
+                  className="bg-purple-50/50 hover:bg-purple-50/80 border border-purple-100 rounded-2xl p-4 transition-all duration-200 flex flex-col justify-between shadow-xs cursor-pointer group"
+                >
                   <div className="flex items-center gap-2.5 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                    <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
                       <Users className="w-4 h-4" />
                     </div>
                     <span className="text-xs font-semibold text-slate-600">Users</span>
                   </div>
                   <div>
-                    <span className="text-xl font-bold text-slate-700 tracking-tight block">Coming Soon</span>
+                    <span className="text-2xl font-black text-slate-900 tracking-tight block">
+                      {loadingStats ? <Loader2 className="w-5 h-5 animate-spin text-purple-600 my-1" /> : stats.users}
+                    </span>
                     <span className="text-[11px] font-semibold text-purple-600 flex items-center gap-0.5 mt-1">
-                      <Clock className="w-3 h-3" /> No Auth Mode
+                      <ArrowUpRight className="w-3 h-3" /> Live Accounts
                     </span>
                   </div>
                 </div>
 
-                {/* 4. Comments (Coming Soon) */}
-                <div className="bg-amber-50/50 hover:bg-amber-50/80 border border-amber-100 rounded-2xl p-4 transition-all duration-200 flex flex-col justify-between shadow-xs">
+                {/* 4. Comments (Real-time Discussions) */}
+                <div
+                  onClick={() => setActiveMenu("Comments")}
+                  className="bg-amber-50/50 hover:bg-amber-50/80 border border-amber-100 rounded-2xl p-4 transition-all duration-200 flex flex-col justify-between shadow-xs cursor-pointer group"
+                >
                   <div className="flex items-center gap-2.5 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
                       <MessageSquare className="w-4 h-4" />
                     </div>
                     <span className="text-xs font-semibold text-slate-600">Comments</span>
                   </div>
                   <div>
-                    <span className="text-xl font-bold text-slate-700 tracking-tight block">Coming Soon</span>
+                    <span className="text-2xl font-black text-slate-900 tracking-tight block">
+                      {loadingStats ? <Loader2 className="w-5 h-5 animate-spin text-amber-600 my-1" /> : stats.comments}
+                    </span>
                     <span className="text-[11px] font-semibold text-amber-600 flex items-center gap-0.5 mt-1">
-                      <Clock className="w-3 h-3" /> Moderation Tool
+                      <ArrowUpRight className="w-3 h-3" /> Live Discussions
                     </span>
                   </div>
                 </div>
 
-                {/* 5. Subscribers (Coming Soon) */}
-                <div className="bg-rose-50/50 hover:bg-rose-50/80 border border-rose-100 rounded-2xl p-4 transition-all duration-200 flex flex-col justify-between shadow-xs">
+                {/* 5. Subscribers (Razorpay Subscriptions) */}
+                <div
+                  onClick={() => setActiveMenu("Subscribers")}
+                  className="bg-rose-50/50 hover:bg-rose-50/80 border border-rose-100 rounded-2xl p-4 transition-all duration-200 flex flex-col justify-between shadow-xs cursor-pointer group"
+                >
                   <div className="flex items-center gap-2.5 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shadow-xs">
+                    <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
                       <Mail className="w-4 h-4" />
                     </div>
                     <span className="text-xs font-semibold text-slate-600">Subscribers</span>
                   </div>
                   <div>
-                    <span className="text-xl font-bold text-slate-700 tracking-tight block">Coming Soon</span>
+                    <span className="text-2xl font-black text-slate-900 tracking-tight block">
+                      {loadingStats ? <Loader2 className="w-5 h-5 animate-spin text-rose-600 my-1" /> : stats.subscribers}
+                    </span>
                     <span className="text-[11px] font-semibold text-rose-600 flex items-center gap-0.5 mt-1">
-                      <Clock className="w-3 h-3" /> Newsletter
+                      <ArrowUpRight className="w-3 h-3" /> ₹{stats.mrr}/mo MRR
                     </span>
                   </div>
                 </div>
 
-                {/* 6. Page Views */}
+                {/* 6. Page Views (Real Aggregated Views) */}
                 <div className="bg-cyan-50/50 hover:bg-cyan-50/80 border border-cyan-100 rounded-2xl p-4 transition-all duration-200 flex flex-col justify-between shadow-xs">
                   <div className="flex items-center gap-2.5 mb-2">
                     <div className="w-8 h-8 rounded-lg bg-cyan-600 text-white flex items-center justify-center shadow-xs">
@@ -901,9 +927,11 @@ export default function AdminDashboard() {
                     <span className="text-xs font-semibold text-slate-600">Page Views</span>
                   </div>
                   <div>
-                    <span className="text-2xl font-black text-slate-900 tracking-tight block">{stats.pageViews}</span>
+                    <span className="text-2xl font-black text-slate-900 tracking-tight block">
+                      {loadingStats ? <Loader2 className="w-5 h-5 animate-spin text-cyan-600 my-1" /> : stats.pageViews}
+                    </span>
                     <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-0.5 mt-1">
-                      <ArrowUpRight className="w-3 h-3" /> Estimated
+                      <ArrowUpRight className="w-3 h-3" /> Verified Database
                     </span>
                   </div>
                 </div>
@@ -1247,7 +1275,14 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                        {displayPosts.slice(0, 10).map((post) => (
+                        {displayPosts.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="py-8 text-center text-xs text-slate-400">
+                              No articles published yet.
+                            </td>
+                          </tr>
+                        ) : (
+                          displayPosts.slice(0, 10).map((post) => (
                           <tr key={post.id} className="hover:bg-slate-50/80 transition-colors group">
                             {/* Title with thumbnail and direct link */}
                             <td className="py-3 px-4 max-w-[240px]">
@@ -1350,7 +1385,7 @@ export default function AdminDashboard() {
                               )}
                             </td>
                           </tr>
-                        ))}
+                        )))}
                       </tbody>
                     </table>
                   </div>
@@ -1372,50 +1407,107 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="space-y-3">
-                      {topCategories.map((cat, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-xs group">
-                          <div className="flex items-center gap-2.5">
-                            <div className={`w-6 h-6 rounded-lg ${cat.iconBg} flex items-center justify-center font-bold text-[10px]`}>
-                              <FolderTree className="w-3.5 h-3.5" />
+                      {topCategories.map((cat, idx) => {
+                        const iconConf = getCategorySidebarIcon(cat.slug, cat.name);
+                        const IconComponent = iconConf.icon;
+                        const isDefault = isDefaultCategory(cat.slug);
+
+                        return (
+                          <div key={idx} className="flex items-center justify-between text-xs group">
+                            <div className="flex items-center gap-2.5">
+                              <div className={cn("w-6 h-6 rounded-lg grid place-items-center shrink-0 text-[10px]", iconConf.color)}>
+                                <IconComponent className="w-3.5 h-3.5" />
+                              </div>
+                              <span className="font-bold text-slate-800">{cat.name}</span>
                             </div>
-                            <span className="font-bold text-slate-800">{cat.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-semibold text-slate-400">{cat.count}</span>
+                              {cat.id && !isDefault && (
+                                <button
+                                  onClick={() => deleteCategoryMutation.mutate({ id: cat.id!, name: cat.name })}
+                                  title="Delete category"
+                                  className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-opacity p-0.5"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                              {isDefault && (
+                                <span title="Default Category">
+                                  <Lock className="w-3 h-3 text-slate-300" />
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-semibold text-slate-400">{cat.count}</span>
-                            {cat.id && (
-                              <button
-                                onClick={() => deleteCategoryMutation.mutate({ id: cat.id!, name: cat.name })}
-                                title="Delete category"
-                                className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-opacity p-0.5"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* WIDGET 2: Recent Comments (Coming Soon) */}
+                  {/* WIDGET 2: Recent Comments (Real Database Data) */}
                   <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-bold text-slate-900">Recent Comments</h3>
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-full">
-                          Coming Soon
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
+                          Live Data
                         </span>
                       </div>
-                      <span className="text-xs text-slate-400">0 Active</span>
+                      <button
+                        onClick={() => setActiveMenu("Comments")}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+                      >
+                        View All &rarr;
+                      </button>
                     </div>
 
-                    <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center">
-                      <MessageSquare className="w-6 h-6 text-slate-300 mx-auto mb-1.5" />
-                      <p className="text-xs font-semibold text-slate-700">Comments Moderation</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        Interactive reader discussions and automated spam filter module coming soon.
-                      </p>
-                    </div>
+                    {(!statsData?.success || !statsData.recentComments || statsData.recentComments.length === 0) ? (
+                      <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center">
+                        <MessageSquare className="w-6 h-6 text-slate-300 mx-auto mb-1.5" />
+                        <p className="text-xs font-semibold text-slate-700">No Comments Yet</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Reader discussions on your published blogs will appear here in real time.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {statsData.recentComments.map((comment) => (
+                          <div key={comment.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
+                            <div className="relative w-7 h-7 rounded-full overflow-hidden bg-blue-100 text-blue-600 shrink-0 font-bold text-[10px] grid place-items-center">
+                              {comment.user.image ? (
+                                <Image
+                                  src={comment.user.image}
+                                  alt={comment.user.name || "User"}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                (comment.user.name || "U")[0]?.toUpperCase()
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-xs font-bold text-slate-800 truncate">
+                                  {comment.user.name || "Anonymous Reader"}
+                                </span>
+                                <span className="text-[10px] text-slate-400 shrink-0 font-mono">
+                                  {new Date(comment.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5 leading-relaxed">
+                                {comment.content}
+                              </p>
+                              <Link
+                                href={`/blogs/${comment.blog.slug}`}
+                                target="_blank"
+                                className="text-[10px] font-semibold text-blue-600 hover:underline line-clamp-1 mt-1 block"
+                              >
+                                on {comment.blog.title}
+                              </Link>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                 </div>
@@ -1536,45 +1628,123 @@ export default function AdminDashboard() {
           {/* VIEW 3: CATEGORIES */}
           {activeMenu === "Categories" && (
             <div className="space-y-5">
-              <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Category Tags ({tags.length})</h3>
-                  <p className="text-xs text-slate-500">Categories define article URLs: `/[category-slug]/[post-slug]`</p>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Category Tags & Block Styles ({tags.length})
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Select different layout grid styles (Styles 1–6) for each category on the homepage.
+                  </p>
                 </div>
-                <button
-                  onClick={() => setIsCategoryModalOpen(true)}
-                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Category</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => seedStylesMutation.mutate()}
+                    disabled={seedStylesMutation.isPending}
+                    type="button"
+                    className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-60"
+                    title="Auto-assign varied block styles to all 19 standard categories"
+                  >
+                    {seedStylesMutation.isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                    )}
+                    <span>Auto-Assign Default Styles</span>
+                  </button>
+                  <button
+                    onClick={() => setIsCategoryModalOpen(true)}
+                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Category</span>
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {tags.map((tag) => {
-                  const postCount = blogs.filter((b) => b.tags?.some((t) => t.tag.id === tag.id || t.tag.slug === tag.slug)).length;
+                  const postCount = blogs.filter((b) =>
+                    b.tags?.some((t) => t.tag.id === tag.id || t.tag.slug === tag.slug)
+                  ).length;
+                  const styleNum = (tag.homepageBlockStyle || "style1").replace("style", "");
+                  const isDefault = isDefaultCategory(tag.slug);
+                  const iconConfig = getCategorySidebarIcon(tag.slug, tag.name);
+                  const CategoryIcon = iconConfig.icon;
+
                   return (
                     <div
                       key={tag.id}
-                      className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-sm flex items-center justify-between hover:border-emerald-300 transition-colors"
+                      className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-sm flex flex-col justify-between hover:border-blue-300 transition-all space-y-3"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                          <FolderTree className="w-5 h-5" />
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className={cn("w-10 h-10 rounded-xl grid place-items-center shrink-0 shadow-2xs", iconConfig.color)}>
+                            <CategoryIcon className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h4 className="text-sm font-bold text-slate-900">{tag.name}</h4>
+                              {isDefault && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400 font-mono">slug: /{tag.slug}</p>
+                            <span className="text-[10px] font-semibold text-emerald-600">
+                              {postCount} Articles Published
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-slate-900">{tag.name}</h4>
-                          <p className="text-[11px] text-slate-400 font-mono">slug: /{tag.slug}</p>
-                          <span className="text-[10px] font-semibold text-emerald-600">{postCount} Articles Published</span>
-                        </div>
+
+                        {isDefault ? (
+                          <div
+                            className="p-1.5 text-slate-300 select-none"
+                            title="Default system category cannot be deleted"
+                          >
+                            <Lock className="w-4 h-4 text-slate-300" />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => deleteCategoryMutation.mutate({ id: tag.id, name: tag.name })}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                            title="Delete Category"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
-                      <button
-                        onClick={() => deleteCategoryMutation.mutate({ id: tag.id, name: tag.name })}
-                        className="p-2 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
-                        title="Delete Category"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+
+                      {/* Homepage Status & Style Badges */}
+                      <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5">
+                          {tag.showOnHomepage ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Home #{tag.homepageOrder ?? 0}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">
+                              Off Home
+                            </span>
+                          )}
+
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            Style {styleNum}
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setSelectedCategoryForStyle(tag);
+                            setIsStyleModalOpen(true);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50/60 hover:bg-blue-100/60 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <SlidersHorizontal className="w-3 h-3" />
+                          <span>Configure Style</span>
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -1915,6 +2085,11 @@ export default function AdminDashboard() {
             <HomepageSectionsManager />
           )}
 
+          {/* VIEW: SHORT VIDEOS MANAGER */}
+          {activeMenu === "Short Videos" && (
+            <ShortVideosManager />
+          )}
+
           {/* VIEW: GENERAL SETTINGS */}
           {activeMenu === "General Settings" && <GeneralSettingsForm />}
 
@@ -1924,6 +2099,18 @@ export default function AdminDashboard() {
           {/* VIEW: SOCIAL LINKS */}
           {activeMenu === "Social Links" && <SocialSettingsForm />}
 
+          {/* VIEW: AD SPACES */}
+          {activeMenu === "Ad Spaces" && <AdSpacesManager />}
+
+          {/* VIEW: USERS MANAGEMENT (REAL DATA) */}
+          {activeMenu === "Users" && <UsersManager />}
+
+          {/* VIEW: SUBSCRIBERS DASHBOARD (REAL DATA) */}
+          {activeMenu === "Subscribers" && <SubscribersManager />}
+
+          {/* VIEW: COMMENTS MODERATION (REAL DATA) */}
+          {activeMenu === "Comments" && <CommentsManager />}
+
           {/* COMING SOON VIEW FOR UNSUPPORTED / FUTURE MODULES */}
           {![
             "Dashboard",
@@ -1932,19 +2119,20 @@ export default function AdminDashboard() {
             "AI Prompts",
             "Study Files",
             "Homepage Manager",
+            "Short Videos",
+            "Ad Spaces",
             "Media Library",
+            "Users",
+            "Subscribers",
+            "Comments",
             "General Settings",
             "SEO Settings",
             "Social Links",
           ].includes(activeMenu) && (
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-12 text-center max-w-xl mx-auto space-y-4 my-8">
               <div className="w-16 h-16 rounded-3xl bg-blue-50 text-blue-600 mx-auto flex items-center justify-center shadow-inner">
-                {activeMenu === "Users" || activeMenu === "Authors" || activeMenu === "Roles & Permissions" ? (
+                {activeMenu === "Authors" || activeMenu === "Roles & Permissions" ? (
                   <Users className="w-8 h-8" />
-                ) : activeMenu === "Comments" ? (
-                  <MessageSquare className="w-8 h-8" />
-                ) : activeMenu === "Subscribers" ? (
-                  <Mail className="w-8 h-8" />
                 ) : (
                   <Inbox className="w-8 h-8" />
                 )}
@@ -1956,8 +2144,8 @@ export default function AdminDashboard() {
                 </span>
                 <h3 className="text-xl font-bold text-slate-900 mt-2">{activeMenu}</h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
-                  {["Users", "Authors", "Roles & Permissions"].includes(activeMenu)
-                    ? "This application runs without user authentication. User management and multi-author permission system will be available in future releases."
+                  {["Authors", "Roles & Permissions"].includes(activeMenu)
+                    ? "Multi-author permission system will be available in future releases."
                     : `${activeMenu} is scheduled for development in the upcoming platform update.`}
                 </p>
               </div>
@@ -2272,6 +2460,13 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Category Block Style Modal */}
+      <CategoryBlockStyleModal
+        isOpen={isStyleModalOpen}
+        onClose={() => setIsStyleModalOpen(false)}
+        category={selectedCategoryForStyle}
+      />
 
     </div>
   );

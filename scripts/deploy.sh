@@ -29,6 +29,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --
 echo "🗄️ Applying Prisma database schema sync..."
 docker compose exec -T nextjs npx prisma db push --accept-data-loss || docker compose exec -T nextjs npx prisma migrate deploy || echo "⚠️ Prisma schema sync skipped."
 
+echo "🎯 Backfilling Dynamic Homepage Sections..."
+docker compose exec -T nextjs node scripts/backfill_homepage_sections.js || true
+
 # 5. Clean up old dangling Docker images to save VPS disk space
 echo "🧹 Pruning old unused Docker images..."
 docker image prune -f

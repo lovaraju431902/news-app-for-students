@@ -97,7 +97,7 @@ export default function LatestNews() {
         <section className="p-3">
             <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-extrabold flex items-center gap-2"><Flame className="w-5 h-5 text-accent-red" /> Latest News</h2>
-                <a className="text-sm cursor-pointer font-semibold text-blue-600 flex items-center gap-2 px-4 py-1">View All</a>
+                <Link href="/blogs" className="text-sm cursor-pointer font-semibold text-blue-600 hover:underline flex items-center gap-2 px-4 py-1">View All</Link>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                 {items.map((it) => (

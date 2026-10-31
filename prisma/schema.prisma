@@ -18,7 +18,16 @@ model Blog {
   seoKeywords   String?
   search_vector Unsupported("tsvector")?
 
-  tags BlogTag[]
+  videoUrl      String?
+  videoDuration String?
+  views         Int                     @default(0)
+  isPremium     Boolean                 @default(false)
+
+  tags          BlogTag[]
+  homepageItems HomepageItem[]
+  likes         BlogLike[]
+  comments      Comment[]
+  bookmarks     Bookmark[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -39,10 +48,26 @@ model Tag {
 
   blogs BlogTag[]
 
+  // Homepage Category Block Style Configuration
+  showOnHomepage      Boolean  @default(false)
+  homepageBlockStyle  String   @default("style1") // "style1" | "style2" | "style3" | "style4" | "style5" | "style6"
+  homepageOrder       Int      @default(0)
+  homepagePostLimit   Int      @default(6)
+  homepageColumns     Int      @default(3)
+  showThumbnail       Boolean  @default(true)
+  showDate            Boolean  @default(true)
+  showExcerpt         Boolean  @default(false)
+  showViewAll         Boolean  @default(true)
+  customTitle         String?
+  icon                String?
+  accentColor         String?
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([slug])
   @@index([parentId])
+  @@index([showOnHomepage, homepageOrder])
 }
 
 model BlogTag {
@@ -54,6 +79,23 @@ model BlogTag {
 
   @@id([blogId, tagId])
   @@index([tagId])
+  @@index([blogId])
+}
+
+model HomepageItem {
+  id        String   @id @default(cuid())
+  blogId    String
+  section   String
+  order     Int      @default(0)
+  priority  Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  blog      Blog     @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  @@unique([blogId, section])
+  @@index([section, isActive, order(sort: Asc), createdAt(sort: Desc)])
   @@index([blogId])
 }
 
@@ -189,32 +231,6 @@ model MostRead {
   @@index([isActive, createdAt(sort: Desc)])
 }
 
-model VideoGallery {
-  id        String   @id @default(cuid())
-  title     String
-  image     String
-  duration  String
-  category  String
-  isActive  Boolean  @default(false)
-  href      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([isActive, createdAt(sort: Desc)])
-}
-
-model YouMayLike {
-  id          String   @id @default(cuid())
-  headline    String
-  description String
-  image       String
-  isActive    Boolean  @default(false)
-  href        String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([isActive, createdAt(sort: Desc)])
-}
 
 model AiPrompt {
   id        String   @id @default(cuid())
@@ -271,6 +287,174 @@ model SiteSetting {
   github                  String   @default("https://github.com")
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
+}
+
+model AdSpace {
+  id            String   @id @default(cuid())
+  spaceKey      String   @unique
+  name          String
+  language      String   @default("English")
+  desktopWidth  String   @default("800")
+  desktopHeight String   @default("130")
+  desktopAdCode String?  @db.Text
+  desktopAdUrl  String?
+  desktopImgUrl String?
+  mobileWidth   String   @default("300")
+  mobileHeight  String   @default("250")
+  mobileAdCode  String?  @db.Text
+  mobileAdUrl   String?
+  mobileImgUrl  String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  emailVerified Boolean        @default(false)
+  image         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  subscriptions Subscription[]
+  likes         BlogLike[]
+  comments      Comment[]
+  bookmarks     Bookmark[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Subscription {
+  id                     String    @id @default(cuid())
+  userId                 String
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider               String    @default("razorpay")
+  providerSubscriptionId String    @unique
+  providerCustomerId     String?
+  planId                 String
+  status                 String    // created | active | pending | halted | cancelled | completed | expired
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("subscription")
+}
+
+model PaymentEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  eventType   String
+  payload     Json
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([eventId])
+  @@map("payment_event")
+}
+
+model BlogLike {
+  id        String   @id @default(cuid())
+  userId    String
+  blogId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blog Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, blogId])
+  @@index([blogId])
+  @@index([userId])
+  @@map("blog_like")
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  content   String    @db.Text
+  userId    String
+  blogId    String
+  parentId  String?
+  isDeleted Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blog    Blog      @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([blogId, createdAt(sort: Desc)])
+  @@index([parentId])
+  @@index([userId])
+  @@map("comment")
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  blogId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blog Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, blogId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([blogId])
+  @@map("bookmark")
 }
 
 

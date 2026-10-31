@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Calendar, BookOpen, ArrowLeft, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import AdBanner from "@/components/ads/AdBanner";
 
 interface Tag {
     id: string;
@@ -130,6 +131,8 @@ export default function InfiniteCategoryBlogs({
 
     return (
         <div className="flex-grow py-6 flex-1 min-w-0 space-y-6">
+            {/* Posts (Top) Ad Space */}
+            <AdBanner space="posts_top" />
             {/* Category Header Title / Subtitle */}
             {/* <div className="border-b border-gray-200 dark:border-zinc-800 pb-4">
                 <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
@@ -250,6 +253,9 @@ export default function InfiniteCategoryBlogs({
                             </span>
                         )}
                     </div>
+
+                    {/* Posts (Bottom) Ad Space */}
+                    <AdBanner space="posts_bottom" className="mt-8" />
                 </>
             )}
         </div>

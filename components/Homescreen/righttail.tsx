@@ -14,6 +14,7 @@ import {
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import AdBanner from "@/components/ads/AdBanner";
 
 
 
@@ -505,37 +506,53 @@ export default function RightRail() {
 
 
             {/* Trending Now */}
-            <div className="bg-card hidden md:block  border border-border rounded-xl overflow-hidden">
-                <div className="px-4 py-3 border-b border-border flex justify-between ">
+            <div className="bg-card hidden md:block border border-border rounded-xl overflow-hidden shadow-2xs">
+                <div className="px-4 py-3 border-b border-border flex justify-between items-center">
                     <h3 className="font-bold flex items-center gap-2"><Flame className="w-4 h-4 text-accent-red" /> Trending Now</h3>
-                    <a className="text-xs font-semibold text-primary flex items-center">View All <ChevronRight className="w-3 h-3" /></a>
+                    <Link
+                        href="/blogs"
+                        className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
+                    >
+                        <span>View All</span>
+                        <ChevronRight className="w-3 h-3" />
+                    </Link>
                 </div>
                 <div className="p-3 space-y-4">
-                    {trendingData.map((item) => (
-                        <div key={item.id} className="flex gap-3 items-center group cursor-pointer">
-
-                            <Image
-                                src={item.image}
-                                width={48}
-                                height={48}
-                                className="rounded-lg object-cover shadow-sm group-hover:scale-102 transition-transform duration-300 shrink-0"
-                                //  style={{ height: "auto" }}
-                                alt={item.title}
-                            />
-                            <div className="flex-1 min-w-0">
-                                <h4 className="text-xs font-bold text-gray-950 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">
-                                    {item.title}
-                                </h4>
-                                <span className="text-[10px] text-gray-400 font-medium block mt-1">
-                                    {item.date}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
+                    {trendingData.map((item) => {
+                        const href = item.href && item.href.trim() !== "" && item.href !== "#"
+                            ? (item.href.startsWith("/") || item.href.startsWith("http") ? item.href : `/${item.href}`)
+                            : "/blogs";
+                        return (
+                            <Link
+                                key={item.id}
+                                href={href}
+                                className="flex gap-3 items-center group cursor-pointer"
+                            >
+                                <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800 shrink-0 border border-zinc-200/60 dark:border-zinc-700/60 shadow-xs">
+                                    <Image
+                                        src={item.image || "/logo.png"}
+                                        fill
+                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                        sizes="48px"
+                                        alt={item.title || "Trending news"}
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-xs font-bold text-gray-950 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                        {item.title}
+                                    </h4>
+                                    <span className="text-[10px] text-gray-400 font-medium block mt-1">
+                                        {item.date}
+                                    </span>
+                                </div>
+                            </Link>
+                        );
+                    })}
                 </div>
             </div>
 
-
+            {/* Sidebar Ad Space 1 */}
+            <AdBanner space="sidebar_1" className="mt-4" />
 
             {/* Study Material (5 Recent Study Files from Repository) */}
             <div className="bg-card mt-4 border border-border rounded-xl overflow-hidden shadow-2xs">
@@ -626,35 +643,51 @@ export default function RightRail() {
             </div>
 
 
-            <div className="bg-card border border-border rounded-xl p-4">
+            <div className="bg-card border border-border rounded-xl p-4 shadow-2xs">
                 <div className="flex items-center justify-between gap-2 mb-4">
                     <h3 className="font-extrabold text-base text-gray-900 whitespace-nowrap">Technology news</h3>
                     <div className="h-[1px] bg-gray-200/65 flex-grow"></div>
-                    <a className="text-[11px] font-bold text-[#b91c1c] border border-red-700/20 rounded-full px-3.5 py-1 hover:bg-red-50 transition-colors whitespace-nowrap cursor-pointer">
+                    <Link
+                        href="/technology"
+                        className="text-[11px] font-bold text-[#b91c1c] border border-red-700/20 rounded-full px-3.5 py-1 hover:bg-red-50 transition-colors whitespace-nowrap cursor-pointer"
+                    >
                         మరిన్ని చదవండి
-                    </a>
+                    </Link>
                 </div>
 
                 <div className="space-y-3.5">
-                    {technologynewsdata.map((item) => (
-                        <div key={item.id} className="flex gap-3 items-start group cursor-pointer">
-                            <div className="relative w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-gray-50 border border-gray-100 shadow-sm">
-                                <Image
-                                    src={item.image}
-                                    fill
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    sizes="80px"
-                                    alt={item.title}
-                                />
-                            </div>
-                            <h4 className="text-xs sm:text-sm font-bold text-gray-950 leading-snug group-hover:text-[#b91c1c] transition-colors line-clamp-2">
-                                {item.title}
-                            </h4>
-                        </div>
-                    ))}
+                    {technologynewsdata.map((item) => {
+                        const href = item.href && item.href.trim() !== "" && item.href !== "#"
+                            ? (item.href.startsWith("/") || item.href.startsWith("http") ? item.href : `/${item.href}`)
+                            : "/technology";
+                        return (
+                            <Link
+                                key={item.id}
+                                href={href}
+                                className="flex gap-3 items-start group cursor-pointer"
+                            >
+                                <div className="relative w-20 h-14 rounded-lg overflow-hidden shrink-0 bg-gray-50 border border-gray-100 shadow-sm">
+                                    <Image
+                                        src={item.image || "/logo.png"}
+                                        fill
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        sizes="80px"
+                                        alt={item.title || "Technology news"}
+                                    />
+                                </div>
+                                <h4 className="text-xs sm:text-sm font-bold text-gray-950 leading-snug group-hover:text-[#b91c1c] transition-colors line-clamp-2">
+                                    {item.title}
+                                </h4>
+                            </Link>
+                        );
+                    })}
                 </div>
             </div>
+
+            {/* Sidebar Ad Space 2 */}
+            <AdBanner space="sidebar_2" className="mt-4" />
 
         </div>
     );
 }
+

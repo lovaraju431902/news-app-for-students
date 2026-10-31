@@ -19,7 +19,10 @@ import {
   Plus,
   Loader2,
   SlidersHorizontal,
+  Film,
+  Crown,
 } from "lucide-react";
+import { HOMEPAGE_SECTIONS } from "@/lib/homepage-sections";
 import { CodeBlock } from "@/components/ui/code-block";
 import {
   Sheet,
@@ -35,7 +38,8 @@ import {
   createBlogAction,
   getBlogByIdAction,
   updateBlogAction,
-  seedMainCategoriesAction
+  seedMainCategoriesAction,
+  type BlogInputData
 } from "@/app/actions/blogs";
 import { MediaPicker } from "@/components/ui/media-picker";
 import { cn } from "@/lib/utils";
@@ -45,7 +49,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 const MAIN_CATEGORY_SLUGS = [
   "part-time-income",
   "share-market",
-  "ai-prompts",
   "carrer-jobs",
   "youtube-growth",
   "instagram",
@@ -69,49 +72,8 @@ const RichEditor = dynamic(() => import("@/components/RichEditor/Editor"), {
   ssr: false,
 });
 
-const INITIAL_CONTENT = `
-<h1>The Future of Antigravity Web Architectures</h1>
-<p>In the rapidly evolving landscape of modern web development, creating rich, interactive, and responsive user interfaces has transitioned from being a premium differentiator to an absolute standard. As frameworks iterate, the boundary between editing content and previewing it continues to dissolve.</p>
+const INITIAL_CONTENT = "";
 
-<div class="side-by-side-wrapper my-6 overflow-hidden">
-  <img src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=600&q=80" data-width="48" data-alignment="left" alt="News room workspace" />
-  <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80" data-width="48" data-alignment="left" alt="Space tech image" />
-</div>
-<p style="clear: both;">Above are two side-by-side images. Setting both of their alignments to left and their widths to 48% allows them to stack horizontally. We clear floats afterward to continue reading.</p>
-
-<blockquote>"True styling is not about decorating text; it is about structuring information so that it speaks to the user intuitively."</blockquote>
-
-<h2>Rich Video Streaming & Portrait Shorts</h2>
-<p>You can embed video clips with customizable dimensions, layouts, and custom thumbnails. Below are sample videos (a landscape video centered, and a portrait shorts video floated left):</p>
-
-<div data-custom-video="" data-src="https://www.youtube.com/watch?v=aqz-KE-bpKQ" data-thumbnail="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80" data-video-type="long" data-width="80" data-alignment="center" class="my-6 overflow-hidden rounded-lg mx-auto" style="width: 80%;">
-  <iframe src="https://www.youtube.com/embed/aqz-KE-bpKQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" class="w-full aspect-video block object-cover bg-black border-0 rounded-lg"></iframe>
-</div>
-
-<div data-custom-video="" data-src="https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-light-in-a-futuristic-city-38991-large.mp4" data-thumbnail="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80" data-video-type="shorts" data-width="35" data-alignment="left" class="my-6 overflow-hidden rounded-lg float-left mr-6 mb-4" style="width: 35%;">
-  <video src="https://assets.mixkit.co/videos/preview/mixkit-girl-in-neon-light-in-a-futuristic-city-38991-large.mp4" poster="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80" controls="" class="w-full aspect-[9/16] max-w-[320px] mx-auto block object-cover bg-black"></video>
-</div>
-
-<p>The vertical video on the left represents a <strong>Shorts layout</strong>. It behaves like a floated element, so paragraphs wrap around it. The video features a custom thumbnail loaded dynamically from an external URL, and can be played directly inside the preview layout. You can clear floats after to reset column alignments.</p>
-
-<h2 style="clear: both;">Interactive Code Blocks in Preview</h2>
-<p>Using our custom code block integration, developers can showcase beautiful syntax-highlighted code snippets directly inside articles. The following snippet illustrates how code is rendered in the preview column:</p>
-
-<pre><code class="language-tsx">import React from "react";
- 
-function HelloWorld() {
-  return (
-    &lt;div className="p-4 rounded-lg bg-primary text-primary-foreground"&gt;
-      &lt;h1&gt;Hello, World!&lt;/h1&gt;
-      &lt;p&gt;This is a simple React component.&lt;/p&gt;
-    &lt;/div&gt;
-  );
-}
- 
-export default HelloWorld;</code></pre>
-
-<p>Try testing it yourself! Insert links, apply bold, italic, or blockquote formatting, and look at the live preview below or on the side to see the formatting reflect in real-time.</p>
-`;
 
 function preprocessHtmlContent(html: string): string {
   if (!html) return html;
@@ -186,11 +148,10 @@ function renderContentWithCodeBlocks(htmlContent: string) {
 }
 
 function RichEditorPageContent() {
-  const [content, setContent] = useState(INITIAL_CONTENT);
+  const [content, setContent] = useState("");
   const [copiedHtml, setCopiedHtml] = useState(false);
   const [copiedJson, setCopiedJson] = useState(false);
   const [activeTab, setActiveTab] = useState<"edit" | "preview" | "both">("both");
-  const [fontFamily, setFontFamily] = useState<"serif" | "sans">("serif");
   const [stats, setStats] = useState({ words: 0, characters: 0, readTime: 0 });
   const [fontSize, setFontSize] = useState(16);
   const [lineHeight, setLineHeight] = useState(1.6);
@@ -206,6 +167,10 @@ function RichEditorPageContent() {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState("");
   const [newTagParentId, setNewTagParentId] = useState("");
+  const [selectedHomepageSections, setSelectedHomepageSections] = useState<string[]>([]);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoDuration, setVideoDuration] = useState("");
+  const [isPremium, setIsPremium] = useState(false);
   const [publishMessage, setPublishMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const keywordList = seoKeywords ? seoKeywords.split(",").map(k => k.trim()).filter(Boolean) : [];
@@ -276,7 +241,7 @@ function RichEditorPageContent() {
 
   const dbTags = tagsData || [];
 
-  const { data: blogToEdit } = useQuery({
+  const { data: blogToEdit, isLoading: isBlogLoading } = useQuery({
     queryKey: ["blog-edit", editId],
     queryFn: async () => {
       if (!editId) return null;
@@ -311,6 +276,12 @@ function RichEditorPageContent() {
         setMainCategoryId("");
         setSelectedTagIds(blogTagIds);
       }
+      const initialSections = (blogToEdit as any).homepageItems?.map((hi: any) => hi.section) || [];
+      setSelectedHomepageSections(initialSections);
+      setVideoUrl((blogToEdit as any).videoUrl || "");
+      setVideoDuration((blogToEdit as any).videoDuration || "");
+      setIsPremium(Boolean((blogToEdit as any).isPremium));
+
       setIsEditMode(true);
     } else if (!editId) {
       setIsEditMode(false);
@@ -322,6 +293,10 @@ function RichEditorPageContent() {
       setSeoKeywords("");
       setMainCategoryId("");
       setSelectedTagIds([]);
+      setSelectedHomepageSections([]);
+      setVideoUrl("");
+      setVideoDuration("");
+      setIsPremium(false);
     }
   }, [blogToEdit, editId]);
 
@@ -376,27 +351,25 @@ function RichEditorPageContent() {
 
       const tagIds = [mainCategoryId, ...selectedTagIds].filter(Boolean);
 
+      const payload: BlogInputData = {
+        title,
+        slug,
+        content,
+        excerpt,
+        featuredImg,
+        tagIds,
+        seoKeywords,
+        homepageSections: selectedHomepageSections,
+        videoUrl,
+        videoDuration,
+        isPremium,
+      };
+
       let res;
       if (isEditMode && editId) {
-        res = await updateBlogAction(editId, {
-          title,
-          slug,
-          content,
-          excerpt,
-          featuredImg,
-          tagIds,
-          seoKeywords,
-        });
+        res = await updateBlogAction(editId, payload);
       } else {
-        res = await createBlogAction({
-          title,
-          slug,
-          content,
-          excerpt,
-          featuredImg,
-          tagIds,
-          seoKeywords,
-        });
+        res = await createBlogAction(payload);
       }
 
       if (!res.success) throw new Error(res.error || "Failed to save blog post.");
@@ -481,10 +454,6 @@ function RichEditorPageContent() {
     }
   };
 
-  const loadSample = () => {
-    setContent(INITIAL_CONTENT);
-  };
-
   const clearEditor = () => {
     setContent("");
   };
@@ -521,17 +490,8 @@ function RichEditorPageContent() {
         <div className="flex items-center flex-wrap gap-2">
           <button
             type="button"
-            onClick={loadSample}
-            className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
-            Load Sample
-          </button>
-
-          <button
-            type="button"
             onClick={clearEditor}
-            className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5 text-red-500" />
             Reset Editor
@@ -570,151 +530,201 @@ function RichEditorPageContent() {
               </button>
             </SheetTrigger>
 
-            <SheetContent className="w-full sm:w-[480px] sm:max-w-[480px] overflow-y-auto border-l border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 p-6 flex flex-col gap-6 font-sans">
+            <SheetContent className="w-full sm:w-[580px] md:w-[640px] lg:w-[680px] sm:max-w-[580px] md:max-w-[640px] lg:max-w-[680px] overflow-y-auto border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 flex flex-col gap-6 font-sans shadow-2xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-200 dark:[&::-webkit-scrollbar-thumb]:bg-zinc-800 [&::-webkit-scrollbar-thumb]:rounded-full">
               <SheetHeader className="p-0 border-b border-zinc-100 dark:border-zinc-850 pb-4">
-                <SheetTitle className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-emerald-500" />
-                  Publishing Settings
-                </SheetTitle>
-                <SheetDescription className="text-xs text-zinc-400">
-                  Configure article metadata, tags, SEO keywords, and publish instantly.
-                </SheetDescription>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 shrink-0">
+                    <Globe className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <SheetTitle className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
+                      Publishing Settings
+                    </SheetTitle>
+                    <SheetDescription className="text-xs text-zinc-400 mt-0.5">
+                      Configure article metadata, taxonomy, and homepage distribution.
+                    </SheetDescription>
+                  </div>
+                </div>
               </SheetHeader>
 
               {/* Form Content */}
-              <div className="space-y-4 flex-1">
-                {/* Title and Auto Fill */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      Blog Title
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleAutoFillTitle}
-                      className="text-[10px] font-bold text-blue-500 hover:underline flex items-center gap-0.5"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      Auto-fill from H1
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => handleTitleChange(e.target.value)}
-                    placeholder="Enter blog title"
-                    className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-850 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+              <div className="space-y-6 flex-1">
+                {/* Section 1: Article Essentials */}
+                <div className="border border-zinc-200/80 dark:border-zinc-850 bg-zinc-50/40 dark:bg-zinc-900/20 rounded-2xl p-4 sm:p-5 space-y-4">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                    Article Information
+                  </h4>
 
-                {/* Slug */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                    Slug (URL Slug)
-                  </label>
-                  <input
-                    type="text"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    placeholder="e.g. future-of-web-dev"
-                    className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-850 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Featured Image */}
-                <div className="space-y-1.5">
-                  <MediaPicker
-                    label="Featured Image (.WebP)"
-                    type="image"
-                    value={featuredImg}
-                    onChange={(url) => setFeaturedImg(url)}
-                    placeholder="Click or drag featured image (Auto-converted to .WebP)"
-                    helperText="High-performance .WebP format with lazy loading for fast page speeds."
-                  />
-                </div>
-
-                {/* Excerpt */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                    Excerpt / Summary
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={excerpt}
-                    onChange={(e) => setExcerpt(e.target.value)}
-                    placeholder="Write a brief article description..."
-                    className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-850 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  />
-                </div>
-
-                {/* SEO Keywords Tag Input */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      SEO Keywords / Meta Tags
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleAutoGenerateKeywords}
-                      className="text-[10px] font-bold text-blue-500 hover:underline flex items-center gap-0.5"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      Auto-generate
-                    </button>
-                  </div>
-
-                  {keywordList.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 p-2 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/30 dark:bg-zinc-900/10">
-                      {keywordList.map((kw, idx) => (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border border-blue-100/50 dark:border-blue-900/30"
-                        >
-                          {kw}
-                          <button
-                            type="button"
-                            onClick={() => removeKeyword(kw)}
-                            className="hover:text-red-500 font-bold ml-0.5 transition-colors focus:outline-none"
-                          >
-                            ✕
-                          </button>
-                        </span>
-                      ))}
+                  {/* Title and Auto Fill */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                        Blog Title <span className="text-red-500">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleAutoFillTitle}
+                        className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/30"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Auto-fill from H1
+                      </button>
                     </div>
-                  )}
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => handleTitleChange(e.target.value)}
+                      placeholder="Enter blog title..."
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-2xs"
+                    />
+                  </div>
 
-                  <input
-                    type="text"
-                    placeholder="Type keyword and press Enter or use commas..."
-                    className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-850 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === ",") {
-                        e.preventDefault();
+                  {/* Slug */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                      URL Slug <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={slug}
+                        onChange={(e) => setSlug(e.target.value)}
+                        placeholder="e.g. future-of-web-dev"
+                        className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-2xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Featured Image */}
+                  <div className="space-y-1.5">
+                    <MediaPicker
+                      label="Featured Image (.WebP)"
+                      type="image"
+                      value={featuredImg}
+                      onChange={(url) => setFeaturedImg(url)}
+                      placeholder="Click or drag featured image (Auto-converted to .WebP)"
+                      helperText="High-performance .WebP format with lazy loading for fast page speeds."
+                    />
+                  </div>
+
+                  {/* Excerpt */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                      Excerpt / Summary
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={excerpt}
+                      onChange={(e) => setExcerpt(e.target.value)}
+                      placeholder="Write a brief article description for Google and social previews..."
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none shadow-2xs"
+                    />
+                  </div>
+
+                  {/* SEO Keywords Tag Input */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                        SEO Keywords / Meta Tags
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleAutoGenerateKeywords}
+                        className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/30"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Auto-generate
+                      </button>
+                    </div>
+
+                    {keywordList.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 p-2.5 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/60">
+                        {keywordList.map((kw, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-900/30"
+                          >
+                            {kw}
+                            <button
+                              type="button"
+                              onClick={() => removeKeyword(kw)}
+                              className="hover:text-red-500 font-bold ml-0.5 transition-colors focus:outline-none"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <input
+                      type="text"
+                      placeholder="Type keyword and press Enter or use commas..."
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-2xs"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === ",") {
+                          e.preventDefault();
+                          const val = e.currentTarget.value;
+                          if (val) {
+                            addKeyword(val);
+                            e.currentTarget.value = "";
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
                         const val = e.currentTarget.value;
                         if (val) {
                           addKeyword(val);
                           e.currentTarget.value = "";
                         }
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const val = e.currentTarget.value;
-                      if (val) {
-                        addKeyword(val);
-                        e.currentTarget.value = "";
-                      }
-                    }}
-                  />
-                  <span className="text-[10px] text-zinc-400 block leading-normal">
-                    Enter keywords separated by commas or press Enter.
-                  </span>
+                      }}
+                    />
+                    <span className="text-[10px] text-zinc-400 block leading-normal">
+                      Enter keywords separated by commas or press Enter.
+                    </span>
+                  </div>
                 </div>
 
-                {/* Database Tags selection */}
-                <div className="space-y-4">
-                  {/* Compulsory Main Category Selection */}
+                {/* Section: Premium Content Access */}
+                <div className="border border-amber-200/80 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/20 rounded-2xl p-4 sm:p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />
+                        <span>Premium Subscriber Only</span>
+                      </h4>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                        Lock full content behind ₹399/mo subscription paywall.
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isPremium}
+                        onChange={(e) => setIsPremium(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500"></div>
+                    </label>
+                  </div>
+                  {isPremium && (
+                    <div className="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-100/60 dark:bg-amber-950/40 p-2.5 rounded-lg border border-amber-200 dark:border-amber-800">
+                      ★ Non-subscribers will only see the article teaser and paywall box.
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 2: Category & Taxonomy */}
+                <div className="border border-zinc-200/80 dark:border-zinc-850 bg-zinc-50/40 dark:bg-zinc-900/20 rounded-2xl p-4 sm:p-5 space-y-4">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-emerald-500" />
+                    Category & Subtags
+                  </h4>
+
+                  {/* Compulsory Main Category Selection (excluding ai-prompts) */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
+                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block">
                       Main Category <span className="text-red-500">*</span>
                     </label>
                     <select
@@ -726,11 +736,11 @@ function RichEditorPageContent() {
                         const childIds = newMainTag?.children?.map((c: any) => c.id) || [];
                         setSelectedTagIds(prev => prev.filter(id => childIds.includes(id)));
                       }}
-                      className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-850 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-850 rounded-xl bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-2xs"
                     >
                       <option value="">-- Select Main Category --</option>
                       {dbTags
-                        .filter(t => !t.parentId && MAIN_CATEGORY_SLUGS.includes(t.slug))
+                        .filter(t => !t.parentId && MAIN_CATEGORY_SLUGS.includes(t.slug) && t.slug !== "ai-prompts" && !t.name.toLowerCase().includes("prompts"))
                         .map((t) => (
                           <option key={t.id} value={t.id}>
                             {t.name}
@@ -741,12 +751,12 @@ function RichEditorPageContent() {
 
                   {/* Subtags selection */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block">
+                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block">
                       Select Subtags
                     </label>
 
                     {!mainCategoryId ? (
-                      <div className="text-xs text-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-zinc-50 dark:bg-zinc-900/40 text-center">
+                      <div className="text-xs text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-white dark:bg-zinc-900/40 text-center">
                         Please select a Main Category first to view or add subtags.
                       </div>
                     ) : (() => {
@@ -755,18 +765,23 @@ function RichEditorPageContent() {
 
                       if (childTags.length === 0) {
                         return (
-                          <div className="text-xs text-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-zinc-50 dark:bg-zinc-900/40 text-center">
+                          <div className="text-xs text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-white dark:bg-zinc-900/40 text-center">
                             No subtags created under "{selectedMainTag?.name}" yet.
                           </div>
                         );
                       }
 
                       return (
-                        <div className="max-h-[160px] overflow-y-auto border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 space-y-2 bg-zinc-50/50 dark:bg-zinc-900/30">
+                        <div className="max-h-[180px] overflow-y-auto border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-1.5 bg-white dark:bg-zinc-900/60">
                           {childTags.map((child: any) => {
                             const isChildSelected = selectedTagIds.includes(child.id);
                             return (
-                              <label key={child.id} className="flex items-center gap-2 cursor-pointer select-none">
+                              <label key={child.id} className={cn(
+                                "flex items-center gap-2.5 p-2 rounded-lg border transition-all cursor-pointer select-none",
+                                isChildSelected
+                                  ? "bg-emerald-50/70 border-emerald-300 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-700 dark:text-emerald-200 font-semibold"
+                                  : "bg-transparent border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300"
+                              )}>
                                 <input
                                   type="checkbox"
                                   checked={isChildSelected}
@@ -777,9 +792,9 @@ function RichEditorPageContent() {
                                         : [...prev, child.id]
                                     );
                                   }}
-                                  className="rounded border-zinc-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                                  className="rounded border-zinc-300 dark:border-zinc-700 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
                                 />
-                                <span className="text-xs text-zinc-800 dark:text-zinc-200">
+                                <span className="text-xs">
                                   {child.name}
                                 </span>
                               </label>
@@ -792,23 +807,23 @@ function RichEditorPageContent() {
 
                   {/* Create Tag Inline Panel */}
                   {mainCategoryId && (
-                    <div className="border-t border-zinc-200 dark:border-zinc-850 pt-4 space-y-2">
+                    <div className="border-t border-zinc-200/80 dark:border-zinc-800 pt-3.5 space-y-2">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">
                         Create New Subtag under "{dbTags.find(t => t.id === mainCategoryId)?.name}"
                       </label>
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          placeholder="Subtag Name"
+                          placeholder="Subtag Name..."
                           value={newTagName}
                           onChange={(e) => setNewTagName(e.target.value)}
-                          className="flex-1 px-3 py-1.5 border border-zinc-200 dark:border-zinc-850 rounded-lg text-xs bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="flex-1 px-3.5 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-2xs"
                         />
                         <button
                           type="button"
                           onClick={handleCreateTag}
                           disabled={createTagMutation.isPending}
-                          className="px-4 py-1.5 bg-zinc-900 dark:bg-zinc-800 text-white rounded-lg text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0 disabled:opacity-50 gap-1"
+                          className="px-4 py-2 bg-zinc-900 dark:bg-zinc-800 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0 disabled:opacity-50 gap-1.5 shadow-sm cursor-pointer"
                         >
                           {createTagMutation.isPending ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -824,16 +839,134 @@ function RichEditorPageContent() {
                   )}
                 </div>
 
-                {/* Publish trigger and feedback alerts */}
-                <div className="pt-4 border-t border-zinc-200 dark:border-zinc-850 flex flex-col gap-3 mt-4">
+                {/* Section 3: Homepage Display Settings */}
+                <div className="border border-zinc-200/80 dark:border-zinc-850 bg-zinc-50/40 dark:bg-zinc-900/20 rounded-2xl p-4 sm:p-5 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" />
+                        Homepage Display Settings
+                      </label>
+                      <p className="text-[10px] text-zinc-500 mt-0.5">
+                        Select which homepage sections will feature this post.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedHomepageSections(HOMEPAGE_SECTIONS.map((s) => s.id))}
+                        className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer px-2 py-0.5 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                      >
+                        Select All
+                      </button>
+                      <span className="text-zinc-300 dark:text-zinc-700">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedHomepageSections([])}
+                        className="text-[11px] font-semibold text-red-500 hover:text-red-600 hover:underline cursor-pointer px-2 py-0.5 rounded hover:bg-red-50 dark:hover:bg-red-950/40"
+                      >
+                        Reset All
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Active Sections Counter Badge */}
+                  <div className="flex items-center justify-between text-xs px-3.5 py-2 bg-blue-50/80 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 rounded-xl border border-blue-100 dark:border-blue-900/40 font-medium">
+                    <span>Active Selected Sections</span>
+                    <span className="font-bold bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[11px] shadow-xs">
+                      {selectedHomepageSections.length} of {HOMEPAGE_SECTIONS.length}
+                    </span>
+                  </div>
+
+                  {/* Section Checkboxes Grid - Spacious 2 columns with NO horizontal scroll */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[340px] overflow-y-auto overflow-x-hidden p-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/60 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-200 dark:[&::-webkit-scrollbar-thumb]:bg-zinc-800 [&::-webkit-scrollbar-thumb]:rounded-full">
+                    {HOMEPAGE_SECTIONS.map((section, idx) => {
+                      const isChecked = selectedHomepageSections.includes(section.id);
+                      return (
+                        <label
+                          key={section.id}
+                          className={cn(
+                            "flex items-start gap-2.5 p-3 rounded-xl border transition-all cursor-pointer select-none text-left",
+                            isChecked
+                              ? "bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-500/70 dark:border-emerald-700 text-emerald-950 dark:text-emerald-100 ring-1 ring-emerald-500/20 shadow-xs"
+                              : "bg-zinc-50/60 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-zinc-700 dark:text-zinc-300"
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              setSelectedHomepageSections((prev) =>
+                                prev.includes(section.id)
+                                  ? prev.filter((id) => id !== section.id)
+                                  : [...prev, section.id]
+                              );
+                            }}
+                            className="mt-0.5 rounded border-zinc-300 dark:border-zinc-700 text-emerald-600 focus:ring-emerald-500 w-4 h-4 shrink-0"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-bold leading-tight flex items-center justify-between gap-1">
+                              <span className="truncate">{idx + 1}. {section.label}</span>
+                              {section.requiresVideo && (
+                                <span className="text-[9px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-200 shrink-0">
+                                  Video
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">
+                              {section.description}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {/* Video Settings (Shown when Videos is selected) */}
+                  {selectedHomepageSections.some((s) => ["videos"].includes(s)) && (
+                    <div className="p-3.5 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl space-y-2.5 mt-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-200">
+                        <Film className="w-4 h-4 text-amber-600" />
+                        <span>Video Settings for Homepage Features</span>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                          Video URL (MP4, YouTube, or Stream)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="https://... (Direct video or YouTube URL)"
+                          value={videoUrl}
+                          onChange={(e) => setVideoUrl(e.target.value)}
+                          className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                          Video Duration (e.g. 03:45 for Video Gallery)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="03:45"
+                          value={videoDuration}
+                          onChange={(e) => setVideoDuration(e.target.value)}
+                          className="w-full px-3.5 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Publish Trigger & Feedback Section */}
+                <div className="pt-2 flex flex-col gap-3">
                   {publishMessage && (
                     <div className={cn(
-                      "p-3.5 rounded-xl text-xs font-medium border flex flex-col gap-1.5",
+                      "p-4 rounded-xl text-xs font-medium border flex flex-col gap-2",
                       publishMessage.type === "success"
-                        ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                        : "bg-rose-500/5 border-rose-500/20 text-rose-600 dark:text-rose-400"
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+                        : "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300"
                     )}>
-                      <span>{publishMessage.text}</span>
+                      <span className="font-semibold">{publishMessage.text}</span>
                       {publishMessage.type === "success" && (
                         <div className="flex gap-2 mt-1">
                           {publishedId && (() => {
@@ -841,7 +974,7 @@ function RichEditorPageContent() {
                             return (
                               <Link
                                 href={`/${categorySlug}/${slug}`}
-                                className="text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg transition-colors inline-block"
+                                className="text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 rounded-lg transition-colors inline-block shadow-sm"
                               >
                                 View Live Post
                               </Link>
@@ -849,7 +982,7 @@ function RichEditorPageContent() {
                           })()}
                           <Link
                             href="/admin"
-                            className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 px-3 py-1.5 rounded-lg transition-colors inline-block"
+                            className="text-xs font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/10 px-3.5 py-1.5 rounded-lg transition-colors inline-block"
                           >
                             Go to Dashboard
                           </Link>
@@ -862,12 +995,12 @@ function RichEditorPageContent() {
                     type="button"
                     onClick={handlePublish}
                     disabled={publishMutation.isPending}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-70 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10"
+                    className="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 disabled:opacity-60 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all hover:shadow-emerald-600/35 active:scale-[0.99] cursor-pointer"
                   >
                     {publishMutation.isPending ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        {isEditMode ? "Updating..." : "Publishing..."}
+                        {isEditMode ? "Updating Blog Post..." : "Publishing Blog Post..."}
                       </>
                     ) : (
                       <>
@@ -918,32 +1051,6 @@ function RichEditorPageContent() {
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
             </button>
-
-            {/* Font Toggle */}
-            <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
-              <button
-                type="button"
-                onClick={() => setFontFamily("serif")}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold font-serif transition-colors ${fontFamily === "serif"
-                  ? "bg-white dark:bg-zinc-800 shadow-sm text-blue-500"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800"
-                  }`}
-                title="Serif Font Preview"
-              >
-                Serif
-              </button>
-              <button
-                type="button"
-                onClick={() => setFontFamily("sans")}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold font-sans transition-colors ${fontFamily === "sans"
-                  ? "bg-white dark:bg-zinc-800 shadow-sm text-blue-500"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800"
-                  }`}
-                title="Sans-serif Font Preview"
-              >
-                Sans
-              </button>
-            </div>
 
             {/* Layout Toggles (Visible on desktop) */}
             <div className="hidden lg:flex items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
@@ -1065,12 +1172,22 @@ function RichEditorPageContent() {
                   Rich Text Workspace
                 </span>
               </div>
-              <RichEditor
-                content={content}
-                onChange={setContent}
-                fontSize={fontSize}
-                lineHeight={lineHeight}
-              />
+              {editId && isBlogLoading ? (
+                <div className="flex-1 min-h-[500px] flex flex-col items-center justify-center gap-3 bg-white dark:bg-zinc-950 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Loading Article Content...</p>
+                    <p className="text-xs text-zinc-400 mt-1">Fetching post data for editing</p>
+                  </div>
+                </div>
+              ) : (
+                <RichEditor
+                  content={content}
+                  onChange={setContent}
+                  fontSize={fontSize}
+                  lineHeight={lineHeight}
+                />
+              )}
             </div>
           )}
 
@@ -1091,10 +1208,7 @@ function RichEditorPageContent() {
 
               {/* Mock Newspaper Layout */}
               <div className="flex-1 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-xl p-8 overflow-y-auto max-h-[750px] shadow-sm select-text">
-                <div
-                  className={`max-w-3xl mx-auto ${fontFamily === "serif" ? "font-serif" : "font-sans"
-                    }`}
-                >
+                <div className="max-w-3xl mx-auto font-sans">
                   <div className="border-b-2 border-zinc-900 dark:border-zinc-800 pb-4 mb-6">
                     <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-2">
                       <span>World News</span>

@@ -215,44 +215,43 @@ export default function WebStoriesAndVideos() {
         <div className="flex items-center justify-between gap-4 mb-4">
           <h2 className="text-gray-900 font-extrabold text-xl whitespace-nowrap">వీడియోస్</h2>
           <div className="h-[1px] bg-gray-300 flex-grow"></div>
-          <a className="text-xs font-bold text-[#b91c1c] border border-red-700/20 rounded-full px-4 py-1.5 hover:bg-red-50 transition-colors whitespace-nowrap cursor-pointer">
+          <Link
+            href="/video-gallery"
+            className="text-xs font-bold text-[#b91c1c] border border-red-700/20 rounded-full px-4 py-1.5 hover:bg-red-50 transition-colors whitespace-nowrap cursor-pointer"
+          >
             READ MORE
-          </a>
+          </Link>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {videosData.map((video) => (
-            <div key={video.id} className="group cursor-pointer flex flex-col">
-              {/* Video Thumbnail Container */}
-              <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-gray-100 shadow-sm group-hover:shadow-md transition-all duration-300">
-                <Image
-                  src={video.image}
-                  alt={video.title}
-                  fill
-                  className="object-cover opacity-90 group-hover:opacity-100 group-hover:scale-103 transition-all duration-500"
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 300px"
-                />
+          {videosData.map((video) => {
+            const videoHref = video.href && video.href.trim() !== "" && video.href !== "#"
+              ? (video.href.startsWith("/") || video.href.startsWith("http") ? video.href : `/${video.href}`)
+              : "/video-gallery";
+            return (
+              <Link
+                key={video.id}
+                href={videoHref}
+                className="group cursor-pointer flex flex-col"
+              >
+                {/* Video Thumbnail Container */}
+                <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-gray-100 shadow-sm group-hover:shadow-md transition-all duration-300">
+                  <Image
+                    src={video.image || "/logo.png"}
+                    alt={video.title || "Video"}
+                    fill
+                    className="object-cover opacity-90 group-hover:opacity-100 group-hover:scale-103 transition-all duration-500"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 300px"
+                  />
+                </div>
 
-                {/* Center Play Button Overlay */}
-                {/* <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors duration-300">
-                                     <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#e50914] text-white shadow-lg transform group-hover:scale-110 transition-transform duration-300">
-                                        <Play className="w-5 h-5 fill-current translate-x-[1.5px]" />
-                                    </div> 
-                                </div> */}
-
-                {/* Channel Badge Overlay (Top Right) */}
-                {/* <div className="absolute top-2 right-2 bg-[#b91c1c] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm tracking-wider border border-white/10">
-                  {video.badge}
-                </div> */}
-
-              </div>
-
-              {/* Video Caption */}
-              <h3 className="text-gray-900 font-bold mt-2.5 text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-red-700 transition-colors">
-                {video.title}
-              </h3>
-            </div>
-          ))}
+                {/* Video Caption */}
+                <h3 className="text-gray-900 font-bold mt-2.5 text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-red-700 transition-colors">
+                  {video.title}
+                </h3>
+              </Link>
+            );
+          })}
         </div>
       </section>
     </div>

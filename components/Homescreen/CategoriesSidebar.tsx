@@ -23,6 +23,7 @@ import {
     Globe,
     Scissors,
     Bell,
+    Terminal,
 } from "lucide-react";
 
 
@@ -82,7 +83,7 @@ const cats = [
         color: "bg-blue-100 text-blue-600",
     },
     {
-        icon: Building2,
+        icon: Terminal,
         label: "AI Prompts",
         href: "/ai-prompts",
         color: "bg-indigo-100 text-indigo-600",

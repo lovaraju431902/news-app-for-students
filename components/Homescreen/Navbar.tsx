@@ -1,7 +1,9 @@
 "use client"
 
 import Link from "next/link";
-import { useState } from "react";
+import Image from "next/image";
+import { useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "../ui/sheet";
 import {
     Briefcase,
@@ -25,7 +27,11 @@ import {
     ChevronDown,
     Menu,
     Terminal,
+    MessageSquare,
+    Eye,
 } from "lucide-react";
+import { getFormattedAdminName } from "@/lib/category-admins";
+import { RealtimeViewsBadge } from "@/components/RealtimeViewsBadge";
 
 
 
@@ -73,20 +79,63 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function Navbar() {
     const items = [
-        { name: "Latest News", href: "/blogs" },
-        { name: "Government Jobs", href: "/govt-jobs-updates" },
-        { name: "Scholarships", href: "/scholarships" },
-        { name: "Part Time Income", href: "/part-time-income" },
-        { name: "Share Market", href: "/share-market" },
-        { name: "YouTube Tips", href: "/youtube-growth" },
-        { name: "AI Tools", href: "/ai-tools" },
-        { name: "Internships", href: "/internships" },
-        { name: "Current Affairs", href: "/current-affairs" }
+        { name: "Latest News", href: "/blogs", slug: "latest-news" },
+        { name: "Government Jobs", href: "/govt-jobs-updates", slug: "govt-jobs-updates" },
+        { name: "Scholarships", href: "/scholarships", slug: "scholarships" },
+        { name: "Part Time Income", href: "/part-time-income", slug: "part-time-income" },
+        { name: "Share Market", href: "/share-market", slug: "share-market" },
+        { name: "YouTube Tips", href: "/youtube-growth", slug: "youtube-growth" },
+        { name: "AI Tools", href: "/ai-tools", slug: "ai-tools" },
+        { name: "Internships", href: "/internships", slug: "internships" },
+        { name: "Current Affairs", href: "/current-affairs", slug: "current-affairs" }
     ];
 
-
     const [open, setOpen] = useState(false);
+    const [activeItem, setActiveItem] = useState<{ name: string; href: string; slug: string } | null>(null);
+    const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Fetch all previews for instant, zero-delay hover response
+    const { data: allPreviews, isLoading } = useQuery<Record<string, any[]>>({
+        queryKey: ["navbar-all-previews"],
+        queryFn: async () => {
+            const res = await fetch("/api/navbar-preview");
+            if (!res.ok) throw new Error("Failed to load navbar previews");
+            const json = await res.json();
+            return json.previews || {};
+        },
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const handleItemMouseEnter = (item: typeof items[0]) => {
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
+        setActiveItem(item);
+    };
+
+    const handleItemMouseLeave = () => {
+        closeTimeoutRef.current = setTimeout(() => {
+            setActiveItem(null);
+        }, 180);
+    };
+
+    const handleDropdownMouseEnter = () => {
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
+    };
+
+    const handleDropdownMouseLeave = () => {
+        closeTimeoutRef.current = setTimeout(() => {
+            setActiveItem(null);
+        }, 180);
+    };
+
+    const activeCards = activeItem ? allPreviews?.[activeItem.slug] || [] : [];
+    const fallbackCards = allPreviews?.["latest-news"] || [];
+    const cardsToDisplay = (activeCards.length > 0 ? activeCards : fallbackCards).slice(0, 5);
 
     const cats = [
         {
@@ -205,35 +254,63 @@ export default function Navbar() {
         },
     ];
 
-
     return (
-        <div className="border-t border-border shadow-sm">
-            <div className="max-w-[1440px] px-4  flex items-center overflow-hidden">
-                <button className="h-10 w-10 grid place-items-center text-primary-foreground rounded-sm bg-[#0047FC] shrink-0">
-                    <Home className="w-5 h-5 text-white " />
+        <div className="relative border-t border-border shadow-sm bg-white dark:bg-zinc-950 z-40">
+            <div className="max-w-[1440px] mx-auto px-4 flex items-center justify-between">
+                <div className="flex items-center flex-1 min-w-0">
+                    <Link
+                        href="/"
+                        className="h-10 w-10 grid place-items-center text-primary-foreground rounded-sm bg-[#0047FC] shrink-0 hover:bg-blue-700 transition-colors"
+                        title="Home"
+                    >
+                        <Home className="w-5 h-5 text-white" />
+                    </Link>
+                    <nav className="flex items-center overflow-x-auto whitespace-nowrap scrollbar-none [&::-webkit-scrollbar]:hidden py-1 px-2">
+                        {items.map((it) => {
+                            const isActive = activeItem?.name === it.name;
+                            return (
+                                <div
+                                    key={it.name}
+                                    onMouseEnter={() => handleItemMouseEnter(it)}
+                                    onMouseLeave={handleItemMouseLeave}
+                                    className="relative shrink-0"
+                                >
+                                    <Link
+                                        href={it.href}
+                                        className={`h-12 px-4 flex items-center gap-1 text-sm font-bold transition-all cursor-pointer rounded-xl ${
+                                            isActive
+                                                ? "bg-blue-100 text-[#0047FC] dark:bg-blue-950/40"
+                                                : "text-black dark:text-zinc-200 hover:bg-blue-100 hover:text-[#0047FC]"
+                                        }`}
+                                    >
+                                        {it.name}{" "}
+                                        <ChevronDown
+                                            className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                                                isActive ? "rotate-180 text-[#0047FC] opacity-100" : "opacity-60"
+                                            }`}
+                                        />
+                                    </Link>
+                                </div>
+                            );
+                        })}
+                    </nav>
+                </div>
+
+                {/* Right button for Mobile / Sidebar drawer */}
+                <button
+                    onClick={() => setOpen(!open)}
+                    className="h-12 w-12 grid place-items-center shrink-0 hover:bg-muted rounded-lg transition-colors"
+                    aria-label="Open categories menu"
+                >
+                    <Menu className="w-5 h-5" />
                 </button>
-                <nav className="flex items-center overflow-x-auto whitespace-nowrap scrollbar-none [&::-webkit-scrollbar]:hidden py-1 px-2">
-                    {items.map((it) => (
-                        <Link
-                            key={it.name}
-                            href={it.href}
-                            className="h-12 hover:bg-blue-100 hover:rounded-xl px-4 flex items-center gap-1 text-sm font-bold text-black hover:text-primary cursor-pointer shrink-0"
-                        >
-                            {it.name} <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-                        </Link>
-                    ))}
-                </nav>
-                <button className="h-12  w-12  hidden md:block"><Menu className="w-5 h-5" /></button>
-
-                <button onClick={() => { setOpen(!open) }} className="md:hidden  h-12 w-12 grid place-items-center shrink-0"><Menu className="w-5 h-5" /></button>
-
 
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetContent className="w-[190px]">
                         <SheetTitle className="sr-only">Categories</SheetTitle>
-                        <SheetDescription className="sr-only">sdebgh</SheetDescription>
+                        <SheetDescription className="sr-only">Categories navigation menu</SheetDescription>
                         <div className="w-full">
-                            <div className="">
+                            <div>
                                 <div className="flex items-center gap-2 p-5 font-extrabold text-sm mb-3 text-gray-900 pb-2 border-b border-gray-100">
                                     <LayoutDashboardIcon className="w-4 h-4 text-primary" />
                                     <span>Categories</span>
@@ -257,14 +334,86 @@ export default function Navbar() {
                                 </ul>
                             </div>
                         </div>
-
                     </SheetContent>
                 </Sheet>
-
             </div>
+
+            {/* Mega Menu Dropdown on Hover (Image 2 UI Reference) */}
+            {activeItem && (
+                <div
+                    onMouseEnter={handleDropdownMouseEnter}
+                    onMouseLeave={handleDropdownMouseLeave}
+                    className="absolute top-full left-0 right-0 w-full bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150"
+                >
+                    <div className="max-w-[1440px] mx-auto px-4 py-4 md:py-6">
+                        {isLoading && !cardsToDisplay.length ? (
+                            /* 5 Skeleton Cards */
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-5">
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                    <div key={i} className="flex flex-col animate-pulse">
+                                        <div className="aspect-[16/10] w-full bg-gray-200 dark:bg-zinc-800 rounded-md" />
+                                        <div className="h-4 bg-gray-200 dark:bg-zinc-800 rounded w-full mt-2.5" />
+                                        <div className="h-4 bg-gray-200 dark:bg-zinc-800 rounded w-4/5 mt-1" />
+                                        <div className="h-3 bg-gray-200 dark:bg-zinc-800 rounded w-3/5 mt-2" />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : cardsToDisplay.length > 0 ? (
+                            /* 5 Real Cards matching Image 2 UI */
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-5">
+                                {cardsToDisplay.map((post) => (
+                                    <Link
+                                        key={post.id}
+                                        href={post.href}
+                                        onClick={() => setActiveItem(null)}
+                                        className="group flex flex-col cursor-pointer"
+                                    >
+                                        {/* Card Thumbnail */}
+                                        <div className="relative aspect-[16/10] w-full rounded-md overflow-hidden bg-gray-100 dark:bg-zinc-800">
+                                            <Image
+                                                src={post.image || "/logo.png"}
+                                                alt={post.title}
+                                                fill
+                                                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 20vw"
+                                                unoptimized={Boolean(post.image?.startsWith("http") || post.image?.startsWith("/uploads"))}
+                                            />
+                                        </div>
+
+                                        {/* Card Title (2 lines clamp) */}
+                                        <h3 className="mt-2.5 font-bold text-sm text-gray-900 dark:text-zinc-100 group-hover:text-[#0047FC] dark:group-hover:text-blue-400 line-clamp-2 leading-snug tracking-tight min-h-[2.5rem] transition-colors">
+                                            {post.title}
+                                        </h3>
+
+                                        {/* Meta Row: Author, Date, Comments, Views */}
+                                        <div className="mt-2 flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 dark:text-zinc-400 font-medium flex-wrap">
+                                            <span className="truncate max-w-[100px]">
+                                                {getFormattedAdminName(post.href ? post.href.split("/")[1] : undefined)}
+                                            </span>
+                                            <span>{post.date}</span>
+                                            <div className="flex items-center gap-2 ml-auto">
+                                                <span className="inline-flex items-center gap-1">
+                                                    <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
+                                                    <span>{post.commentsCount ?? 0}</span>
+                                                </span>
+                                                <RealtimeViewsBadge slug={post.slug} initialViews={post.views ?? 0} />
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-8 text-center text-sm text-gray-500">
+                                No articles available in this category yet.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+
 
 
 

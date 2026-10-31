@@ -1,9 +1,17 @@
 export const revalidate = 60;
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getDynamicHomepageSectionPosts } from "@/lib/homepage-service"
 
 export async function GET(request: Request) {
     try {
+        // 1. Try dynamic posts explicitly assigned to most_read
+        const dynamicMostRead = await getDynamicHomepageSectionPosts("most_read", 10);
+        if (dynamicMostRead.length > 0) {
+            return NextResponse.json({ data: dynamicMostRead }, { status: 200 });
+        }
+
+        // 2. Fallback to legacy MostRead table if no dynamic posts assigned yet
         const result = await prisma.mostRead.findMany({
             where: {
                 isActive: true,

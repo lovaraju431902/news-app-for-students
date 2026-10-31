@@ -29,8 +29,10 @@ import {
 import Categoryrow from "./nextsection";
 import LatestNews from "./latestnews";
 import RightRail from "./righttail";
-import WebStoriesAndVideos from "./webstoriesandvideos";
-import MostRead from "./mostread";
+import ShortVideosSection from "./ShortVideosSection";
+import HomepageCategoryBlocks from "./HomepageCategoryBlocks";
+import AdBanner from "@/components/ads/AdBanner";
+import { getFormattedAdminName } from "@/lib/category-admins";
 // import { useQuery } from "@tanstack/react-query";
 
 const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -151,6 +153,34 @@ type CardsResponse = {
 
 
 
+
+function CarouselSkeleton() {
+    return (
+        <div className="flex flex-col lg:flex-row gap-4 w-full animate-pulse">
+            {/* Carousel Skeleton */}
+            <div className="lg:flex-[2] relative rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 h-[240px] sm:h-[320px] lg:h-[400px] flex flex-col justify-end p-6">
+                <div className="h-4 w-24 bg-zinc-300 dark:bg-zinc-700 rounded mb-4" />
+                <div className="h-6 w-3/4 bg-zinc-300 dark:bg-zinc-700 rounded mb-2" />
+                <div className="h-6 w-1/2 bg-zinc-300 dark:bg-zinc-700 rounded mb-4" />
+                <div className="flex gap-2">
+                    <div className="h-3 w-16 bg-zinc-300 dark:bg-zinc-700 rounded" />
+                    <div className="h-3 w-16 bg-zinc-300 dark:bg-zinc-700 rounded" />
+                </div>
+            </div>
+
+            {/* Right Cards Skeleton */}
+            <div className="lg:flex-[1] grid grid-cols-2 lg:grid-cols-1 gap-3 lg:h-[400px]">
+                {[1, 2].map((i) => (
+                    <div key={i} className="relative rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-850 h-[180px] lg:h-auto lg:flex-1 flex flex-col justify-end p-4">
+                        <div className="h-3 w-16 bg-zinc-300 dark:bg-zinc-700 rounded mb-3" />
+                        <div className="h-4 w-5/6 bg-zinc-300 dark:bg-zinc-700 rounded mb-2" />
+                        <div className="h-3 w-24 bg-zinc-300 dark:bg-zinc-700 rounded" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 export default function Sidebar() {
 
@@ -378,31 +408,7 @@ export default function Sidebar() {
     ];
 
 
-    const CarouselSkeleton = () => (
-        <div className="flex flex-col lg:flex-row gap-4 w-full animate-pulse">
-            {/* Carousel Skeleton */}
-            <div className="lg:flex-[2] relative rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 h-[240px] sm:h-[320px] lg:h-[400px] flex flex-col justify-end p-6">
-                <div className="h-4 w-24 bg-zinc-300 dark:bg-zinc-700 rounded mb-4" />
-                <div className="h-6 w-3/4 bg-zinc-300 dark:bg-zinc-700 rounded mb-2" />
-                <div className="h-6 w-1/2 bg-zinc-300 dark:bg-zinc-700 rounded mb-4" />
-                <div className="flex gap-2">
-                    <div className="h-3 w-16 bg-zinc-300 dark:bg-zinc-700 rounded" />
-                    <div className="h-3 w-16 bg-zinc-300 dark:bg-zinc-700 rounded" />
-                </div>
-            </div>
 
-            {/* Right Cards Skeleton */}
-            <div className="lg:flex-[1] grid grid-cols-2 lg:grid-cols-1 gap-3 lg:h-[400px]">
-                {[1, 2].map((i) => (
-                    <div key={i} className="relative rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-850 h-[180px] lg:h-auto lg:flex-1 flex flex-col justify-end p-4">
-                        <div className="h-3 w-16 bg-zinc-300 dark:bg-zinc-700 rounded mb-3" />
-                        <div className="h-4 w-5/6 bg-zinc-300 dark:bg-zinc-700 rounded mb-2" />
-                        <div className="h-3 w-24 bg-zinc-300 dark:bg-zinc-700 rounded" />
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
 
 
 
@@ -495,7 +501,7 @@ export default function Sidebar() {
                                                         <div className="flex items-center gap-2 text-white/85 text-[11px] font-medium flex-wrap">
                                                             <span>{slide.date}</span>
                                                             <span>•</span>
-                                                            <span>{slide.author}</span>
+                                                            <span>{getFormattedAdminName(slide.href ? slide.href.split("/")[1] : undefined)}</span>
                                                         </div>
                                                     </div>
 
@@ -593,6 +599,9 @@ export default function Sidebar() {
 
                         )}
 
+                        {/* Index (Top) Ad Space */}
+                        <AdBanner space="index_top" />
+
                         {/* Quick Categoryrow */}
                         <div>
                             <Categoryrow />
@@ -603,17 +612,18 @@ export default function Sidebar() {
                             <LatestNews />
                         </div>
 
-                        {/* Web Stories & Videos */}
+                        {/* Short Videos */}
                         <div>
-                            <WebStoriesAndVideos />
+                            <ShortVideosSection />
                         </div>
 
-                        {/* Most Read Section */}
-                        {/* <div>
-                        <MostRead />
-                    </div> */}
+                        {/* Dynamic Category Blocks (Styles 1-6) */}
+                        <div>
+                            <HomepageCategoryBlocks />
+                        </div>
 
-
+                        {/* Index (Bottom) Ad Space */}
+                        <AdBanner space="index_bottom" />
                     </div>
 
                     {/* Close Left + Middle Column Wrapper */}

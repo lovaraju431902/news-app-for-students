@@ -4,16 +4,37 @@ import { prisma } from "@/lib/prisma";
 export default async function Home() {
   let firstSlide = null;
   try {
-    const slides = await prisma.slideData.findMany({
+    const dynamicSlideItem = await prisma.homepageItem.findFirst({
       where: {
+        section: "slide_data",
         isActive: true,
       },
-      orderBy: {
-        createdAt: "desc",
+      include: {
+        blog: {
+          select: { featuredImg: true },
+        },
       },
-      take: 1,
+      orderBy: [
+        { priority: "desc" },
+        { order: "asc" },
+        { createdAt: "desc" },
+      ],
     });
-    firstSlide = slides[0];
+
+    if (dynamicSlideItem?.blog?.featuredImg) {
+      firstSlide = { image: dynamicSlideItem.blog.featuredImg };
+    } else {
+      const slides = await prisma.slideData.findMany({
+        where: {
+          isActive: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 1,
+      });
+      firstSlide = slides[0];
+    }
   } catch (error) {
     console.error("Failed to query slides at build-time:", error);
   }

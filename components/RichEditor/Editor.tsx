@@ -867,7 +867,7 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
               <ChevronDown className="w-3 h-3 opacity-60" />
             </button>
             {showColorBoxPicker && (
-              <div className="absolute top-9 left-0 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2.5 rounded-xl shadow-2xl z-50 min-w-[150px] flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="absolute top-9 right-0 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2.5 rounded-xl shadow-2xl z-50 min-w-[190px] flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
                 <span className="text-[10px] uppercase font-bold text-zinc-400 dark:text-zinc-500 px-1 font-sans">Choose Box Color</span>
                 <div className="grid grid-cols-4 gap-2 border-t border-zinc-100 dark:border-zinc-800/80 pt-1.5">
                   <button
@@ -969,7 +969,7 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
                           setShowColorBoxPicker(false);
                         }
                       }}
-                      className="h-6 px-1.5 text-[9px] font-bold uppercase rounded bg-blue-500 hover:bg-blue-600 active:scale-95 text-white transition-all cursor-pointer flex items-center justify-center"
+                      className="h-6 px-2 text-[9px] font-bold uppercase rounded bg-blue-600 hover:bg-blue-700 active:scale-95 text-white transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-xs"
                     >
                       Apply
                     </button>
@@ -1142,7 +1142,7 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
             [&_.ProseMirror_p]:dark:text-zinc-300
             
             [&_.ProseMirror_h1]:[font-size:calc(var(--responsive-font-size,16px)*1.875)]
-            [&_.ProseMirror_h1]:font-serif 
+            [&_.ProseMirror_h1]:font-sans 
             [&_.ProseMirror_h1]:font-bold 
             [&_.ProseMirror_h1]:mt-6 
             [&_.ProseMirror_h1]:mb-3
@@ -1150,7 +1150,7 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
             [&_.ProseMirror_h1]:dark:text-white
             
             [&_.ProseMirror_h2]:[font-size:calc(var(--responsive-font-size,16px)*1.5)]
-            [&_.ProseMirror_h2]:font-serif 
+            [&_.ProseMirror_h2]:font-sans 
             [&_.ProseMirror_h2]:font-bold 
             [&_.ProseMirror_h2]:mt-5 
             [&_.ProseMirror_h2]:mb-2.5
@@ -1158,7 +1158,7 @@ export default function RichEditor({ content, onChange, fontSize = 16, lineHeigh
             [&_.ProseMirror_h2]:dark:text-zinc-100
             
             [&_.ProseMirror_h3]:[font-size:calc(var(--responsive-font-size,16px)*1.25)]
-            [&_.ProseMirror_h3]:font-serif 
+            [&_.ProseMirror_h3]:font-sans 
             [&_.ProseMirror_h3]:font-semibold 
             [&_.ProseMirror_h3]:mt-4 
             [&_.ProseMirror_h3]:mb-2

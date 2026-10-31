@@ -5,6 +5,7 @@ import { searchBlogs } from "@/lib/search-service";
 import { revalidatePath } from "next/cache";
 import { redis } from "@/lib/redis";
 import { getSession } from "@/lib/session";
+import { invalidateHomepageSectionCache } from "@/lib/homepage-service";
 
 export async function getTagsAction() {
   try {
@@ -63,6 +64,8 @@ export async function createTagAction(name: string, parentId?: string | null) {
   }
 }
 
+import { isDefaultCategory } from "@/lib/category-icons";
+
 export async function deleteTagAction(id: string) {
   const session = await getSession();
   if (!session) {
@@ -70,6 +73,22 @@ export async function deleteTagAction(id: string) {
   }
 
   try {
+    const existing = await prisma.tag.findUnique({
+      where: { id },
+      select: { id: true, slug: true, name: true },
+    });
+
+    if (!existing) {
+      return { success: false, error: "Category not found." };
+    }
+
+    if (isDefaultCategory(existing.slug)) {
+      return {
+        success: false,
+        error: `Cannot delete '${existing.name}'. Default system categories are protected and cannot be deleted.`,
+      };
+    }
+
     // Delete any subcategories/children first to avoid foreign key constraints
     await prisma.tag.deleteMany({
       where: { parentId: id },
@@ -89,7 +108,7 @@ export async function deleteTagAction(id: string) {
   }
 }
 
-export async function createBlogAction(data: {
+export interface BlogInputData {
   title: string;
   slug: string;
   content: string;
@@ -97,7 +116,13 @@ export async function createBlogAction(data: {
   featuredImg?: string;
   tagIds: string[];
   seoKeywords?: string;
-}) {
+  homepageSections?: string[];
+  videoUrl?: string;
+  videoDuration?: string;
+  isPremium?: boolean;
+}
+
+export async function createBlogAction(data: BlogInputData) {
   const session = await getSession();
   if (!session) {
     return { success: false, error: "Unauthorized access." };
@@ -127,6 +152,10 @@ export async function createBlogAction(data: {
       return { success: false, error: "A blog with this slug already exists." };
     }
 
+    const rawSections = Array.isArray(data.homepageSections)
+      ? Array.from(new Set(data.homepageSections.filter(Boolean)))
+      : [];
+
     const blog = await prisma.blog.create({
       data: {
         title: trimmedTitle,
@@ -135,13 +164,30 @@ export async function createBlogAction(data: {
         excerpt: data.excerpt?.trim() || null,
         featuredImg: data.featuredImg?.trim() || null,
         seoKeywords: data.seoKeywords?.trim() || null,
+        videoUrl: data.videoUrl?.trim() || null,
+        videoDuration: data.videoDuration?.trim() || null,
+        isPremium: data.isPremium || false,
         tags: {
           create: data.tagIds.map((tagId) => ({
             tagId,
           })),
         },
+        homepageItems: {
+          create: rawSections.map((section, idx) => ({
+            section,
+            order: idx,
+            isActive: true,
+          })),
+        },
+      },
+      include: {
+        tags: {
+          include: { tag: true },
+        },
+        homepageItems: true,
       },
     });
+
     revalidatePath("/");
     revalidatePath("/blogs");
     revalidatePath("/[category]", "layout");
@@ -319,6 +365,7 @@ export async function getBlogByIdAction(id: string) {
             tag: true,
           },
         },
+        homepageItems: true,
       },
     });
     return { success: true, blog };
@@ -362,15 +409,7 @@ export async function deleteBlogAction(id: string) {
 
 export async function updateBlogAction(
   id: string,
-  data: {
-    title: string;
-    slug: string;
-    content: string;
-    excerpt?: string;
-    featuredImg?: string;
-    tagIds: string[];
-    seoKeywords?: string;
-  }
+  data: BlogInputData
 ) {
   const session = await getSession();
   if (!session) {
@@ -410,27 +449,76 @@ export async function updateBlogAction(
       return { success: false, error: "Another blog with this slug already exists." };
     }
 
-    // Delete existing BlogTags
-    await prisma.blogTag.deleteMany({
-      where: { blogId: id },
-    });
+    const newSections = data.homepageSections !== undefined
+      ? Array.from(new Set(data.homepageSections.filter(Boolean)))
+      : null;
 
-    // Update blog and create new BlogTags
-    const blog = await prisma.blog.update({
-      where: { id },
-      data: {
-        title: trimmedTitle,
-        slug: trimmedSlug,
-        content: data.content,
-        excerpt: data.excerpt?.trim() || null,
-        featuredImg: data.featuredImg?.trim() || null,
-        seoKeywords: data.seoKeywords?.trim() || null,
-        tags: {
-          create: data.tagIds.map((tagId) => ({
-            tagId,
-          })),
+    const blog = await prisma.$transaction(async (tx) => {
+      // 1. Delete existing BlogTags and recreate
+      await tx.blogTag.deleteMany({
+        where: { blogId: id },
+      });
+
+      // 2. Handle homepage section assignments if provided
+      if (newSections !== null) {
+        // Delete sections no longer assigned
+        await tx.homepageItem.deleteMany({
+          where: {
+            blogId: id,
+            section: { notIn: newSections },
+          },
+        });
+
+        // Add any newly selected sections
+        for (let i = 0; i < newSections.length; i++) {
+          const section = newSections[i];
+          const existing = await tx.homepageItem.findUnique({
+            where: {
+              blogId_section: {
+                blogId: id,
+                section,
+              },
+            },
+          });
+          if (!existing) {
+            await tx.homepageItem.create({
+              data: {
+                blogId: id,
+                section,
+                order: i,
+                isActive: true,
+              },
+            });
+          }
+        }
+      }
+
+      // 3. Update blog fields and new tags
+      return await tx.blog.update({
+        where: { id },
+        data: {
+          title: trimmedTitle,
+          slug: trimmedSlug,
+          content: data.content,
+          excerpt: data.excerpt?.trim() || null,
+          featuredImg: data.featuredImg?.trim() || null,
+          seoKeywords: data.seoKeywords?.trim() || null,
+          videoUrl: data.videoUrl !== undefined ? (data.videoUrl?.trim() || null) : undefined,
+          videoDuration: data.videoDuration !== undefined ? (data.videoDuration?.trim() || null) : undefined,
+          isPremium: data.isPremium !== undefined ? data.isPremium : undefined,
+          tags: {
+            create: data.tagIds.map((tagId) => ({
+              tagId,
+            })),
+          },
         },
-      },
+        include: {
+          tags: {
+            include: { tag: true },
+          },
+          homepageItems: true,
+        },
+      });
     });
 
     if (redis.isConfigured && currentBlog) {
@@ -449,6 +537,36 @@ export async function updateBlogAction(
     return { success: true, blog };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to update blog." };
+  }
+}
+
+export async function incrementBlogViewsAction(slug: string) {
+  try {
+    const blog = await prisma.blog.update({
+      where: { slug: slug.trim() },
+      data: {
+        views: { increment: 1 },
+      },
+      select: { id: true, slug: true, views: true },
+    });
+
+    if (redis.isConfigured) {
+      try {
+        await Promise.all([
+          redis.set(`blog:views:slug:${blog.slug}`, blog.views, { ex: 86400 }),
+          redis.set(`blog:views:id:${blog.id}`, blog.views, { ex: 86400 }),
+          redis.del(`blog:slug:${blog.slug}`),
+          redis.del("homepage:category-blocks"),
+        ]);
+        await invalidateHomepageSectionCache();
+      } catch (err) {
+        console.error("Redis sync error in incrementBlogViewsAction:", err);
+      }
+    }
+
+    return { success: true, views: blog.views };
+  } catch {
+    return { success: false };
   }
 }
 

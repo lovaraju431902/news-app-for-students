@@ -322,14 +322,6 @@ export function ShortVideoPlayerModal({
           <p className="text-sm font-semibold leading-snug line-clamp-3 mb-2">
             {currentStory.title}
           </p>
-          {currentStory.href && (
-            <a
-              href={currentStory.href}
-              className="inline-flex items-center text-xs text-red-400 font-bold hover:underline pointer-events-auto"
-            >
-              Learn More &rarr;
-            </a>
-          )}
         </div>
 
         {/* Desktop Navigation Arrows */}

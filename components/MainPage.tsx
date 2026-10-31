@@ -1,8 +1,6 @@
 import Sidebar from "./Homescreen";
 import Header from "./Homescreen/header";
 import MostRead from "./Homescreen/mostread";
-import VideoGallery from "./Homescreen/videogallery";
-import YouMayLike from "./Homescreen/youmaylike";
 import Footer from "./Homescreen/footer";
 import Navbar from "./Homescreen/Navbar";
 import Categoryrow from "./Homescreen/nextsection";
@@ -18,8 +16,6 @@ export default function MainPage() {
             <Navbar />
             <Sidebar />
             <MostRead />
-            <VideoGallery />
-            <YouMayLike />
             <Footer />
 
         </div>

@@ -30,6 +30,9 @@ docker compose exec -T nextjs node scripts/seed_authors.js || true
 echo "📝 Seeding 30 Starter Blogs & Categories..."
 docker compose exec -T nextjs node scripts/seed_data.js || true
 
+echo "🎯 Backfilling Dynamic Homepage Sections & Category Block Styles..."
+docker compose exec -T nextjs node scripts/backfill_homepage_sections.js || true
+
 echo "=========================================================="
 echo "✅ Docker stack started successfully!"
 echo "Run './scripts/health_check.sh' to inspect container health."

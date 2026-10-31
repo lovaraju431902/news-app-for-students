@@ -1,12 +1,17 @@
 export const revalidate = 60;
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-
+import { getDynamicHomepageSectionPosts } from "@/lib/homepage-service"
 
 export async function GET(res: Request) {
-
     try {
+        // 1. Try dynamic posts from HomepageItem
+        const dynamicTech = await getDynamicHomepageSectionPosts("technology_news", 10);
+        if (dynamicTech.length > 0) {
+            return NextResponse.json({ data: dynamicTech }, { status: 200 });
+        }
 
+        // 2. Fallback to legacy TechnologyNews table if no dynamic posts assigned yet
         const result1 = await prisma.technologyNews.findMany({
             where: {
                 isActive: true,
@@ -15,18 +20,12 @@ export async function GET(res: Request) {
                 createdAt: "desc",
             },
             take: 10
-
         })
         return NextResponse.json({ data: result1 }, { status: 200 })
-
-
-
-
     } catch (error) {
         console.log(error)
         return NextResponse.json({ error: "Failed to get Technology news" }, { status: 500 })
     }
-
 }
 
 export async function POST(request: Request) {

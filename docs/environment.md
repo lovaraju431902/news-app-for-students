@@ -24,6 +24,8 @@ This document provides a comprehensive inventory of all environment variables us
 | `S3_ENDPOINT` | Storage / S3 | Optional | `https://blr1.digitaloceanspaces.com` | Custom endpoint for S3-compatible storage |
 | `S3_BUCKET_NAME` | Storage / S3 | Optional | `news-assets` | Target bucket name for media storage |
 | `CDN_URL` | Storage / CDN | Optional | `https://cdn.yourdomain.com` | Public CDN URL mapping to the storage bucket |
+| `RESEND_API_KEY` | Application / Email | Yes | `re_...` | API Key from Resend for sending transactional OTP & notification emails |
+| `RESEND_FROM_EMAIL` | Application / Email | Optional | `Students Hub <verify@yourdomain.com>` | Verified sender address in Resend (default: `onboarding@resend.dev`) |
 
 ---
 

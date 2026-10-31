@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getBlogBySlugAction } from "../../actions/blogs";
+import { getBlogBySlugAction, incrementBlogViewsAction } from "../../actions/blogs";
 import BlogContentRenderer from "@/components/BlogContentRenderer";
 import CategoriesSidebar from "@/components/Homescreen/CategoriesSidebar";
 import Topbar from "@/components/Homescreen/topbar";
@@ -9,9 +9,15 @@ import Footer from "@/components/Homescreen/footer";
 import RightRail from "@/components/Homescreen/righttail";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { CalendarDays } from "lucide-react";
+import { Eye, MessageSquare } from "lucide-react";
 import Image from "next/image";
 import type { Metadata } from "next";
+import AdBanner from "@/components/ads/AdBanner";
+import { getFormattedAdminName } from "@/lib/category-admins";
+import { RealtimeViewsBadge } from "@/components/RealtimeViewsBadge";
+import { ViewTracker } from "@/components/ViewTracker";
+import { getAccessLevel } from "@/lib/subscription/access";
+import { PaywallBlock } from "@/components/subscription/PaywallBlock";
 
 interface PageProps {
   params: Promise<{
@@ -59,6 +65,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+function extractTeaserContent(content: string, excerpt?: string | null): string {
+  const pMatches = content.match(/<p[\s\S]*?<\/p>/gi);
+  if (pMatches && pMatches.length > 0) {
+    return pMatches.slice(0, 5).join("");
+  }
+  if (excerpt && excerpt.trim()) {
+    return `<p class="lead text-base sm:text-lg text-gray-700 dark:text-zinc-300 font-medium">${excerpt.trim()}</p>`;
+  }
+  const clean = content.replace(/<[^>]*>/g, " ").trim();
+  return `<p>${clean.substring(0, 800)}...</p>`;
+}
+
 export default async function BlogDetailPage({ params }: PageProps) {
   const { category, slug } = await params;
 
@@ -69,6 +87,21 @@ export default async function BlogDetailPage({ params }: PageProps) {
   }
 
   const blog = result.blog;
+
+  // Server-side paywall check
+  const access = await getAccessLevel();
+  const isLocked = Boolean(blog.isPremium && !access.hasActiveSubscription);
+
+  // Server-side content security: strip full body text for non-subscribers
+  const safeBlog = {
+    ...blog,
+    content: isLocked
+      ? extractTeaserContent(blog.content, blog.excerpt)
+      : blog.content,
+  };
+
+  // Track article views asynchronously without blocking page rendering
+  incrementBlogViewsAction(slug).catch(() => {});
 
   // Verify that the blog has a root/parent tag matching the category parameter in the URL
   const matchesCategory = blog.tags.some(
@@ -135,121 +168,140 @@ export default async function BlogDetailPage({ params }: PageProps) {
             <CategoriesSidebar />
 
             {/* Middle Column: Blog Content and Recommendations */}
-            <div className="flex-grow flex-1 min-w-0 space-y-12 pt-5">
+            <div className="flex-grow flex-1 min-w-0 space-y-8 pt-5">
+
+              {/* Post Details (Top) Ad Space */}
+              <AdBanner space="post_details_top" />
 
               {/* Blog Content (Shadow Removed) */}
               <div className=" md:border rounded-xl p-2 md:p-10">
-                <BlogContentRenderer blog={blog as any} inline={true} />
+                <ViewTracker slug={slug} />
+                <BlogContentRenderer
+                  blog={safeBlog as any}
+                  inline={true}
+                  isLocked={isLocked}
+                  currentPath={`/${category}/${slug}`}
+                  isAuthenticated={access.isAuthenticated}
+                />
               </div>
+
+              {/* Post Details (Bottom) Ad Space */}
+              <AdBanner space="post_details_bottom" />
 
               {/* More Blogs Section */}
               {moreBlogs.length > 0 && (
-                <section className="space-y-6">
+                <section className="space-y-4">
                   <div className="border-b border-gray-200 dark:border-zinc-800 pb-2">
                     <h2 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">
                       More Articles
                     </h2>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 mr-3 md:mr-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                     {moreBlogs.map((item) => {
                       const primaryTag = item.tags.find((t: any) => !t.tag.parentId)?.tag || item.tags[0]?.tag;
-                      const catSlug = primaryTag?.slug || "general";
+                      const catSlug = primaryTag?.slug || category;
+                      const adminName = getFormattedAdminName(catSlug);
+                      const formattedDate = new Date(item.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      });
 
                       return (
-                        <div key={item.id} className="group flex flex-col h-full bg-white dark:bg-zinc-900 rounded-xl overflow-hidden border border-gray-100 dark:border-zinc-850 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
-                          {item.featuredImg && (
-                            <Link href={`/${catSlug}/${item.slug}`} className="relative aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800 block">
+                        <article key={item.id} className="group flex flex-col w-full">
+                          <div className="relative w-full aspect-[16/9] sm:aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-zinc-800 rounded-[4px]">
+                            <Link href={`/${catSlug}/${item.slug}`} className="block w-full h-full relative">
                               <Image
-                                src={item.featuredImg}
+                                src={item.featuredImg || "/logo.png"}
                                 alt={item.title}
                                 fill
-                                className="object-cover group-hover:scale-103 transition-transform duration-500"
-                                sizes="(max-width: 768px) 100vw, 350px"
+                                className="object-cover group-hover:scale-104 transition-transform duration-300"
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px"
                               />
                             </Link>
-                          )}
-                          <div className="p-3 md:p-4 flex-grow flex flex-col justify-between">
-                            <div className="space-y-2 md:space-y-3">
-                              {primaryTag && (
-                                <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400">
-                                  {primaryTag.name}
-                                </span>
-                              )}
-                              <h3 className="font-extrabold text-sm sm:text-base text-gray-900 dark:text-white leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">
-                                <Link href={`/${catSlug}/${item.slug}`}>
-                                  {item.title}
-                                </Link>
-                              </h3>
-                            </div>
-                            <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400  font-medium border-t border-gray-50 dark:border-zinc-850 pt-2 md:pt-3">
-                              <CalendarDays className="w-3.5 h-3.5" />
-                              <span>
-                                {new Date(item.createdAt).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
-                              </span>
-                            </div>
                           </div>
-                        </div>
+                          <div className="mt-2.5 flex flex-col flex-1">
+                            <h3 className="font-bold text-[14px] sm:text-[15px] text-gray-900 dark:text-zinc-100 leading-snug line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              <Link href={`/${catSlug}/${item.slug}`}>
+                                {item.title}
+                              </Link>
+                            </h3>
+                            <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 dark:text-zinc-400 mt-1.5 flex-wrap">
+                              <span>{adminName}</span>
+                              <span>{formattedDate}</span>
+                              <span className="inline-flex items-center gap-0.5 ml-0.5">
+                                <MessageSquare className="w-3 h-3 text-gray-400" />
+                                <span>0</span>
+                              </span>
+                              <RealtimeViewsBadge slug={item.slug} initialViews={item.views} />
+                            </div>
+                            {item.excerpt && (
+                              <p className="text-xs text-gray-500 dark:text-zinc-400 line-clamp-2 mt-1.5 leading-relaxed">
+                                {item.excerpt}
+                              </p>
+                            )}
+                          </div>
+                        </article>
                       );
                     })}
                   </div>
                 </section>
               )}
 
-              {/* Related Blogs Section at the bottom (Replaces youmaylike) */}
+              {/* Related Blogs Section at the bottom */}
               {relatedBlogs.length > 0 && (
-                <section className="space-y-6">
-                  <div className="border-b border-gray-200 dark:border-zinc-800 pb-2 flex items-center justify-between">
+                <section className="space-y-4">
+                  <div className="border-b border-gray-200 dark:border-zinc-800 pb-2">
                     <h2 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">
                       Related Articles
                     </h2>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                     {relatedBlogs.map((item) => {
                       const primaryTag = item.tags.find((t: any) => !t.tag.parentId)?.tag || item.tags[0]?.tag;
-                      const catSlug = primaryTag?.slug || "general";
+                      const catSlug = primaryTag?.slug || category;
+                      const adminName = getFormattedAdminName(catSlug);
+                      const formattedDate = new Date(item.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      });
 
                       return (
-                        <div key={item.id} className="group flex flex-col h-full bg-white dark:bg-zinc-900 rounded-xl overflow-hidden border border-gray-100 dark:border-zinc-850 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
-                          {item.featuredImg && (
-                            <Link href={`/${catSlug}/${item.slug}`} className="relative aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800 block">
+                        <article key={item.id} className="group flex flex-col w-full">
+                          <div className="relative w-full aspect-[16/9] sm:aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-zinc-800 rounded-[4px]">
+                            <Link href={`/${catSlug}/${item.slug}`} className="block w-full h-full relative">
                               <Image
-                                src={item.featuredImg}
+                                src={item.featuredImg || "/logo.png"}
                                 alt={item.title}
                                 fill
-                                className="object-cover group-hover:scale-103 transition-transform duration-500"
-                                sizes="(max-width: 768px) 100vw, 350px"
+                                className="object-cover group-hover:scale-104 transition-transform duration-300"
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 250px"
                               />
                             </Link>
-                          )}
-                          <div className="p-4 flex-grow flex flex-col justify-between">
-                            <div className="space-y-2">
-                              {primaryTag && (
-                                <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
-                                  {primaryTag.name}
-                                </span>
-                              )}
-                              <h3 className="font-extrabold text-sm sm:text-base text-gray-900 dark:text-white leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">
-                                <Link href={`/${catSlug}/${item.slug}`}>
-                                  {item.title}
-                                </Link>
-                              </h3>
-                            </div>
-                            <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-4 font-medium border-t border-gray-50 dark:border-zinc-850 pt-3">
-                              <CalendarDays className="w-3.5 h-3.5" />
-                              <span>
-                                {new Date(item.createdAt).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
-                              </span>
-                            </div>
                           </div>
-                        </div>
+                          <div className="mt-2.5 flex flex-col flex-1">
+                            <h3 className="font-bold text-[14px] sm:text-[15px] text-gray-900 dark:text-zinc-100 leading-snug line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              <Link href={`/${catSlug}/${item.slug}`}>
+                                {item.title}
+                              </Link>
+                            </h3>
+                            <div className="flex items-center gap-2 text-[11px] sm:text-xs text-gray-500 dark:text-zinc-400 mt-1.5 flex-wrap">
+                              <span>{adminName}</span>
+                              <span>{formattedDate}</span>
+                              <span className="inline-flex items-center gap-0.5 ml-0.5">
+                                <MessageSquare className="w-3 h-3 text-gray-400" />
+                                <span>0</span>
+                              </span>
+                              <RealtimeViewsBadge slug={item.slug} initialViews={item.views} />
+                            </div>
+                            {item.excerpt && (
+                              <p className="text-xs text-gray-500 dark:text-zinc-400 line-clamp-2 mt-1.5 leading-relaxed">
+                                {item.excerpt}
+                              </p>
+                            )}
+                          </div>
+                        </article>
                       );
                     })}
                   </div>

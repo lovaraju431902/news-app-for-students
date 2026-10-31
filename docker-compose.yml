@@ -89,6 +89,8 @@ services:
         condition: service_healthy
       meilisearch:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/${POSTGRES_DB:-news_db}?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_password}@redis:6379
@@ -100,6 +102,13 @@ services:
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
       CDN_URL: ${CDN_URL}
       SESSION_SECRET: ${SESSION_SECRET}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
       NODE_ENV: production
       PORT: 3000
     networks:

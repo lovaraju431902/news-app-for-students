@@ -6,6 +6,13 @@ import Image from "next/image";
 import { Calendar, BookOpen, ArrowLeft, Home } from "lucide-react";
 import { CodeBlock } from "@/components/ui/code-block";
 import { cn } from "@/lib/utils";
+import AdBanner from "@/components/ads/AdBanner";
+import { getCategoryAdmin } from "@/lib/category-admins";
+import { RealtimeViewsBadge } from "@/components/RealtimeViewsBadge";
+import ArticleEngagementBar from "@/components/blog/ArticleEngagementBar";
+import BlogComments from "@/components/blog/BlogComments";
+import ProgressiveBlur from "@/components/smoothui/progressive-blur";
+import { PaywallBlock } from "@/components/subscription/PaywallBlock";
 
 interface Tag {
   id: string;
@@ -96,6 +103,61 @@ function renderContentWithCodeBlocks(htmlContent: string) {
   }
 
   return elements;
+}
+
+function isInsidePreTag(html: string, index: number): boolean {
+  const openPre = html.lastIndexOf("<pre", index);
+  if (openPre === -1) return false;
+  const closePre = html.lastIndexOf("</pre>", index);
+  return openPre > closePre;
+}
+
+function renderContentWithInArticleAds(htmlContent: string) {
+  if (!htmlContent) return null;
+
+  const paragraphRegex = /<\/p>/gi;
+  const matchPositions: number[] = [];
+  let m;
+  while ((m = paragraphRegex.exec(htmlContent)) !== null) {
+    if (!isInsidePreTag(htmlContent, m.index)) {
+      matchPositions.push(m.index + m[0].length);
+    }
+  }
+
+  // If fewer than 2 paragraphs, render code blocks normally
+  if (matchPositions.length < 2) {
+    return renderContentWithCodeBlocks(htmlContent);
+  }
+
+  const ad1Pos = matchPositions[Math.min(2, matchPositions.length - 1)];
+  const ad2Pos = matchPositions.length >= 6 ? matchPositions[Math.min(5, matchPositions.length - 1)] : null;
+
+  if (ad2Pos && ad2Pos > ad1Pos) {
+    const part1 = htmlContent.substring(0, ad1Pos);
+    const part2 = htmlContent.substring(ad1Pos, ad2Pos);
+    const part3 = htmlContent.substring(ad2Pos);
+
+    return (
+      <>
+        {renderContentWithCodeBlocks(part1)}
+        <AdBanner space="in_article_1" className="my-2.5" />
+        {renderContentWithCodeBlocks(part2)}
+        <AdBanner space="in_article_2" className="my-2.5" />
+        {renderContentWithCodeBlocks(part3)}
+      </>
+    );
+  }
+
+  const part1 = htmlContent.substring(0, ad1Pos);
+  const part2 = htmlContent.substring(ad1Pos);
+
+  return (
+    <>
+      {renderContentWithCodeBlocks(part1)}
+      <AdBanner space="in_article_1" className="my-2.5" />
+      {renderContentWithCodeBlocks(part2)}
+    </>
+  );
 }
 
 const ADMIN_MAPPING: Record<string, { name: string; image: string }> = {
@@ -281,7 +343,21 @@ const getBadgeStyle = (slug: string) => {
   return colors[slug] || "bg-zinc-700 text-white";
 };
 
-export default function BlogContentRenderer({ blog, inline = false }: { blog: Blog; inline?: boolean }) {
+interface BlogContentRendererProps {
+  blog: Blog & { isPremium?: boolean };
+  inline?: boolean;
+  isLocked?: boolean;
+  currentPath?: string;
+  isAuthenticated?: boolean;
+}
+
+export default function BlogContentRenderer({
+  blog,
+  inline = false,
+  isLocked = false,
+  currentPath = "",
+  isAuthenticated = false,
+}: BlogContentRendererProps) {
   const [imageError, setImageError] = useState(false);
   const [adminImgError, setAdminImgError] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
@@ -324,9 +400,14 @@ export default function BlogContentRenderer({ blog, inline = false }: { blog: Bl
       .toUpperCase();
   };
 
+  const primaryTag = blog.tags.find(({ tag }) => !tag.parentId)?.tag || blog.tags[0]?.tag;
+  const categoryName = primaryTag ? primaryTag.name : "Latest News";
+  const categoryUrl = primaryTag ? `/${primaryTag.slug}` : "/blogs";
+
+  const defaultAdmin = getCategoryAdmin(primaryTag?.slug);
   let adminInfo = {
-    name: "Admin",
-    image: "/logo.png"
+    name: defaultAdmin.name,
+    image: defaultAdmin.image
   };
 
   for (const { tag } of blog.tags) {
@@ -342,10 +423,6 @@ export default function BlogContentRenderer({ blog, inline = false }: { blog: Bl
       }
     }
   }
-
-  const primaryTag = blog.tags.find(({ tag }) => !tag.parentId)?.tag || blog.tags[0]?.tag;
-  const categoryName = primaryTag ? primaryTag.name : "Latest News";
-  const categoryUrl = primaryTag ? `/${primaryTag.slug}` : "/blogs";
 
   const handleInstagramShare = () => {
     if (typeof window !== "undefined") {
@@ -445,7 +522,7 @@ export default function BlogContentRenderer({ blog, inline = false }: { blog: Bl
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">
-                  By <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">{adminInfo.name === "Admin" ? "Students Voice" : adminInfo.name}</span>
+                  By <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">{adminInfo.name}</span>
                 </span>
                 <svg className="w-3.5 h-3.5 text-blue-500 fill-blue-500 flex-shrink-0" viewBox="0 0 24 24">
                   <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
@@ -471,6 +548,12 @@ export default function BlogContentRenderer({ blog, inline = false }: { blog: Bl
             <div className="flex items-center gap-1.5 py-1">
               <BookOpen className="w-4 h-4 text-zinc-400" />
               <span>{getReadingTime(blog.content)} min read</span>
+            </div>
+
+            <span className="hidden sm:inline text-zinc-300 dark:text-zinc-700 font-light">|</span>
+
+            <div className="flex items-center gap-1.5 py-1">
+              <RealtimeViewsBadge slug={blog.slug} initialViews={(blog as any).views ?? 0} showText={true} />
             </div>
           </div>
 
@@ -549,55 +632,77 @@ export default function BlogContentRenderer({ blog, inline = false }: { blog: Bl
         )}
 
         {/* Rich HTML Content */}
-        <div
-          className="article-preview-content prose max-w-none text-zinc-800 dark:text-zinc-200 leading-relaxed text-base md:text-lg
-            [&_h1]:text-2xl [&_h1]:md:text-3xl [&_h1]:font-extrabold [&_h1]:mt-8 [&_h1]:mb-4 [&_h1]:tracking-tight [&_h1]:text-zinc-900 [&_h1]:dark:text-white
-            [&_h2]:text-xl [&_h2]:md:text-2xl [&_h2]:font-extrabold [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:text-zinc-900 [&_h2]:dark:text-zinc-100
-            [&_h3]:text-lg [&_h3]:md:text-xl [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-zinc-850 [&_h3]:dark:text-zinc-200
-            [&_p]:mb-6 [&_p]:leading-relaxed
-            [&_blockquote]:border-l-4 [&_blockquote]:border-blue-500 [&_blockquote]:py-3.5 [&_blockquote]:px-5 [&_blockquote]:rounded-r-xl [&_blockquote]:bg-blue-50/50 [&_blockquote]:dark:bg-blue-950/20 [&_blockquote]:italic [&_blockquote]:my-6 [&_blockquote]:text-zinc-655 [&_blockquote]:dark:text-zinc-400 [&_blockquote]:text-base [&_blockquote]:md:text-lg
-            
-            [&_.callout-box]:text-base [&_.callout-box]:md:text-lg
-            
-            [&_mark]:px-1 [&_mark]:py-0.5 [&_mark]:rounded-md
-            
-            [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-6 [&_ul]:space-y-1.5
-            [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-6 [&_ol]:space-y-1.5
-            [&_li]:text-zinc-855 [&_li]:dark:text-zinc-300
-            
-            [&_a]:text-blue-600 [&_a]:dark:text-blue-400 [&_a]:hover:underline [&_a]:transition-colors
-            
-            [&_code]:bg-zinc-100 [&_code]:dark:bg-zinc-900 [&_code]:text-red-500 [&_code]:dark:text-red-400 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono [&_code]:text-sm
-            
-            [&_img]:rounded-xl [&_img]:border [&_img]:border-zinc-200 [&_img]:dark:border-zinc-800 [&_img]:my-6
-            [&_img[data-alignment='left']]:float-left 
-            [&_img[data-alignment='left']]:mr-6 
-            [&_img[data-alignment='left']]:mb-4
-            [&_img[data-alignment='right']]:float-right 
-            [&_img[data-alignment='right']]:ml-6 
-            [&_img[data-alignment='right']]:mb-4
-            [&_img[data-alignment='center']]:block 
-            [&_img[data-alignment='center']]:mx-auto 
-            [&_img[data-alignment='center']]:my-6
-            [&_img[data-alignment='center']]:float-none
-            [&_img[data-alignment='center']]:clear-both
-            
-            [&_div[data-custom-video]]:my-6
-            [&_div[data-custom-video][data-alignment='left']]:float-left
-            [&_div[data-custom-video][data-alignment='left']]:mr-6
-            [&_div[data-custom-video][data-alignment='left']]:mb-4
-            [&_div[data-custom-video][data-alignment='right']]:float-right
-            [&_div[data-custom-video][data-alignment='right']]:ml-6
-            [&_div[data-custom-video][data-alignment='right']]:mb-4
-            [&_div[data-custom-video][data-alignment='center']]:block
-            [&_div[data-custom-video][data-alignment='center']]:mx-auto
-            [&_div[data-custom-video][data-alignment='center']]:clear-both
-            [&_video]:rounded-xl [&_video]:border [&_video]:border-zinc-200 [&_video]:dark:border-zinc-800 [&_video]:my-6 [&_video]:shadow-md
-            [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_table]:text-sm
-            [&_th]:p-3 [&_th]:text-left [&_td]:p-3 [&_td]:text-left"
-        >
-          {renderContentWithCodeBlocks(blog.content)}
-        </div>
+        {isLocked ? (
+          <div className="relative mb-8">
+            <div className="relative max-h-[380px] sm:max-h-[460px] overflow-hidden select-none pointer-events-none">
+              <div
+                className="article-preview-content prose max-w-none text-zinc-800 dark:text-zinc-200 leading-relaxed text-base md:text-lg
+                  [&_h1]:text-2xl [&_h1]:md:text-3xl [&_h1]:font-extrabold [&_h1]:mt-8 [&_h1]:mb-4 [&_h1]:tracking-tight [&_h1]:text-zinc-900 [&_h1]:dark:text-white
+                  [&_h2]:text-xl [&_h2]:md:text-2xl [&_h2]:font-extrabold [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:text-zinc-900 [&_h2]:dark:text-zinc-100
+                  [&_h3]:text-lg [&_h3]:md:text-xl [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-zinc-850 [&_h3]:dark:text-zinc-200
+                  [&_p]:mb-6 [&_p]:leading-relaxed
+                  [&_blockquote]:border-l-4 [&_blockquote]:border-blue-500 [&_blockquote]:py-3.5 [&_blockquote]:px-5 [&_blockquote]:rounded-r-xl [&_blockquote]:bg-blue-50/50 [&_blockquote]:dark:bg-blue-950/20 [&_blockquote]:italic [&_blockquote]:my-6 [&_blockquote]:text-zinc-655 [&_blockquote]:dark:text-zinc-400 [&_blockquote]:text-base [&_blockquote]:md:text-lg
+                  [&_.callout-box]:text-base [&_.callout-box]:md:text-lg
+                  [&_mark]:px-1 [&_mark]:py-0.5 [&_mark]:rounded-md
+                  [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-6 [&_ul]:space-y-1.5
+                  [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-6 [&_ol]:space-y-1.5
+                  [&_li]:text-zinc-855 [&_li]:dark:text-zinc-300
+                  [&_a]:text-blue-600 [&_a]:dark:text-blue-400 [&_a]:hover:underline [&_a]:transition-colors
+                  [&_code]:bg-zinc-100 [&_code]:dark:bg-zinc-900 [&_code]:text-red-500 [&_code]:dark:text-red-400 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono [&_code]:text-sm
+                  [&_img]:rounded-xl [&_img]:border [&_img]:border-zinc-200 [&_img]:dark:border-zinc-800 [&_img]:my-6
+                  [&_video]:rounded-xl [&_video]:border [&_video]:border-zinc-200 [&_video]:dark:border-zinc-800 [&_video]:my-6 [&_video]:shadow-md
+                  [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_table]:text-sm
+                  [&_th]:p-3 [&_th]:text-left [&_td]:p-3 [&_td]:text-left"
+              >
+                {renderContentWithInArticleAds(blog.content)}
+              </div>
+              <ProgressiveBlur
+                direction="bottom"
+                blur={32}
+                layers={8}
+                className="absolute inset-0 z-10"
+              />
+            </div>
+
+            {/* Paywall Call To Action */}
+            <PaywallBlock
+              currentPath={currentPath || (typeof window !== "undefined" ? window.location.pathname : "")}
+              isAuthenticated={Boolean(isAuthenticated)}
+            />
+          </div>
+        ) : (
+          <div
+            className="article-preview-content prose max-w-none text-zinc-800 dark:text-zinc-200 leading-relaxed text-base md:text-lg
+              [&_h1]:text-2xl [&_h1]:md:text-3xl [&_h1]:font-extrabold [&_h1]:mt-8 [&_h1]:mb-4 [&_h1]:tracking-tight [&_h1]:text-zinc-900 [&_h1]:dark:text-white
+              [&_h2]:text-xl [&_h2]:md:text-2xl [&_h2]:font-extrabold [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:text-zinc-900 [&_h2]:dark:text-zinc-100
+              [&_h3]:text-lg [&_h3]:md:text-xl [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-zinc-850 [&_h3]:dark:text-zinc-200
+              [&_p]:mb-6 [&_p]:leading-relaxed
+              [&_blockquote]:border-l-4 [&_blockquote]:border-blue-500 [&_blockquote]:py-3.5 [&_blockquote]:px-5 [&_blockquote]:rounded-r-xl [&_blockquote]:bg-blue-50/50 [&_blockquote]:dark:bg-blue-950/20 [&_blockquote]:italic [&_blockquote]:my-6 [&_blockquote]:text-zinc-655 [&_blockquote]:dark:text-zinc-400 [&_blockquote]:text-base [&_blockquote]:md:text-lg
+              [&_.callout-box]:text-base [&_.callout-box]:md:text-lg
+              [&_mark]:px-1 [&_mark]:py-0.5 [&_mark]:rounded-md
+              [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-6 [&_ul]:space-y-1.5
+              [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-6 [&_ol]:space-y-1.5
+              [&_li]:text-zinc-855 [&_li]:dark:text-zinc-300
+              [&_a]:text-blue-600 [&_a]:dark:text-blue-400 [&_a]:hover:underline [&_a]:transition-colors
+              [&_code]:bg-zinc-100 [&_code]:dark:bg-zinc-900 [&_code]:text-red-500 [&_code]:dark:text-red-400 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono [&_code]:text-sm
+              [&_img]:rounded-xl [&_img]:border [&_img]:border-zinc-200 [&_img]:dark:border-zinc-800 [&_img]:my-6
+              [&_video]:rounded-xl [&_video]:border [&_video]:border-zinc-200 [&_video]:dark:border-zinc-800 [&_video]:my-6 [&_video]:shadow-md
+              [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_table]:text-sm
+              [&_th]:p-3 [&_th]:text-left [&_td]:p-3 [&_td]:text-left"
+          >
+            {renderContentWithInArticleAds(blog.content)}
+          </div>
+        )}
+
+        {/* Article Engagement Bar (Bencho Likes, Bookmarks, Comments count) */}
+        {blog.id && <ArticleEngagementBar blogId={blog.id} />}
+
+        {/* Discussion / Comments Section */}
+        {blog.id && (
+          <div id="comments-section" className="mt-8">
+            <BlogComments blogId={blog.id} />
+          </div>
+        )}
 
         {/* Clear floats just in case */}
         {!inline && (
